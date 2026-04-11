@@ -38,7 +38,7 @@ Configures Git `user.name` and `user.email` globally on the runner.
 **Inputs:**
 
 | Name | Description | Required | Default |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `git-user-name` | Value for `git config user.name` | No | `github-actions[bot]` |
 | `git-user-email` | Value for `git config user.email` | No | `github-actions[bot]@users.noreply.github.com` |
 
@@ -227,11 +227,6 @@ Computes the next semver tag from [Conventional Commits](https://www.conventiona
 
 Computes a pre-release version string for pull request builds. Outputs a SemVer-compatible pre-release version and a dot-separated build identifier.
 
-| Output | Example |
-| --- | --- |
-| `version` | `0.0.0-pr.123.5.1` |
-| `build-id` | `123.5.1` |
-
 **Usage (automatic — no inputs needed in a PR context):**
 
 ```yaml
@@ -239,15 +234,13 @@ Computes a pre-release version string for pull request builds. Outputs a SemVer-
   id: version
 ```
 
-**Usage (explicit inputs):**
+**Usage (explicit pr-number):**
 
 ```yaml
 - uses: mmastersvz/central-ci/actions/pr-version@v1
   id: version
   with:
     pr-number: ${{ github.event.pull_request.number }}
-    run-number: ${{ github.run_number }}
-    run-attempt: ${{ github.run_attempt }}
 ```
 
 **Inputs:**
@@ -265,6 +258,34 @@ Computes a pre-release version string for pull request builds. Outputs a SemVer-
 | `previous-tag` | Always empty for PR builds |
 | `release-type` | Always `prerelease` |
 | `build-id` | Dot-separated build identifier (e.g. `123.5.1`) |
+
+### `move-major-tag`
+
+Moves the floating major version tag (e.g. `v1`) to point at a new semver tag. Requires `contents: write` permission.
+
+**Usage:**
+
+```yaml
+- uses: mmastersvz/central-ci/actions/move-major-tag@v1
+  with:
+    tag: ${{ steps.version.outputs.new-tag }}
+    token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+**Inputs:**
+
+| Name | Description | Required | Default |
+| --- | --- | --- | --- |
+| `tag` | Full semver tag to derive the major version from (e.g. `v1.2.3` → moves `v1`) | Yes | — |
+| `token` | GitHub token with `contents:write` permission | Yes | — |
+
+**Outputs:**
+
+| Name | Description |
+| --- | --- |
+| `major-tag` | The major version tag that was moved (e.g. `v1`) |
+
+---
 
 ## Contributing
 
