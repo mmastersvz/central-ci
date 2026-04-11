@@ -50,6 +50,49 @@ Creates and pushes a Git tag to origin. Requires the calling job to have `conten
 | `new-tag` | Tag name to create and push (e.g. `v1.2.3`) | Yes | — |
 | `token` | GitHub token with `contents:write` permission | Yes | — |
 
+### `next-version`
+
+Computes the next semver tag from [Conventional Commits](https://www.conventionalcommits.org/). Supports an optional service prefix or plain `vX.Y.Z` tags.
+
+| Commit pattern | Bump |
+| --- | --- |
+| `feat!:`, `fix!:`, `BREAKING CHANGE` | major |
+| `feat:` | minor |
+| anything else | patch |
+
+**Usage (plain tags):**
+
+```yaml
+- uses: mmastersvz/central-ci/actions/next-version@v1
+  id: version
+# outputs: v1.2.3
+```
+
+**Usage (service prefix):**
+
+```yaml
+- uses: mmastersvz/central-ci/actions/next-version@v1
+  id: version
+  with:
+    service: "my-service"
+# outputs: my-service/v1.2.3
+```
+
+**Inputs:**
+
+| Name | Description | Required | Default |
+| --- | --- | --- | --- |
+| `service` | Service name used as tag prefix. Omit for plain `vX.Y.Z`. | No | `""` |
+| `token` | GitHub token for `git fetch` on private repos. | No | `github.token` |
+
+**Outputs:**
+
+| Name | Description |
+| --- | --- |
+| `new-tag` | The next computed tag (e.g. `v1.2.3` or `my-service/v1.2.3`) |
+| `previous-tag` | The most recent matching tag, or empty string if none exists |
+| `release-type` | The bump type applied: `major`, `minor`, or `patch` |
+
 ## Testing
 
 Test workflows live in `.github/workflows/` and are prefixed with `test-`.

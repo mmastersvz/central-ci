@@ -1,0 +1,70 @@
+name: "Test: next-version"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-no-prefix:
+    name: "Test plain vX.Y.Z tag (no service)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Compute next version"
+        id: version
+        uses: ./actions/next-version
+
+      - name: "Verify output format"
+        shell: bash
+        env:
+          NEW_TAG: ${{ steps.version.outputs.new-tag }}
+          RELEASE_TYPE: ${{ steps.version.outputs.release-type }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$NEW_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "FAIL: new-tag '$NEW_TAG' does not match vX.Y.Z"
+            exit 1
+          fi
+          if [[ ! "$RELEASE_TYPE" =~ ^(major|minor|patch)$ ]]; then
+            echo "FAIL: release-type '$RELEASE_TYPE' is not major/minor/patch"
+            exit 1
+          fi
+          echo "OK: new-tag=$NEW_TAG release-type=$RELEASE_TYPE"
+
+  test-with-prefix:
+    name: "Test prefixed tag (with service)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Compute next version with service prefix"
+        id: version
+        uses: ./actions/next-version
+        with:
+          service: "my-service"
+
+      - name: "Verify output format"
+        shell: bash
+        env:
+          NEW_TAG: ${{ steps.version.outputs.new-tag }}
+          RELEASE_TYPE: ${{ steps.version.outputs.release-type }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$NEW_TAG" =~ ^my-service/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "FAIL: new-tag '$NEW_TAG' does not match my-service/vX.Y.Z"
+            exit 1
+          fi
+          if [[ ! "$RELEASE_TYPE" =~ ^(major|minor|patch)$ ]]; then
+            echo "FAIL: release-type '$RELEASE_TYPE' is not major/minor/patch"
+            exit 1
+          fi
+          echo "OK: new-tag=$NEW_TAG release-type=$RELEASE_TYPE"

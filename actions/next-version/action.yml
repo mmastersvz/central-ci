@@ -1,0 +1,33 @@
+name: "Next Version"
+description: "Computes the next semver tag from Conventional Commits. Supports an optional service prefix (e.g. my-service/vX.Y.Z) or plain vX.Y.Z."
+
+inputs:
+  service:
+    description: "Optional service name used as a tag prefix (e.g. 'my-service' produces tags like 'my-service/v1.2.3'). Omit for plain vX.Y.Z tags."
+    required: false
+    default: ""
+  token:
+    description: "GitHub token used to authenticate git fetch on private repositories. Can be omitted for public repos."
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  new-tag:
+    description: "The next computed tag (e.g. v1.2.3 or my-service/v1.2.3)"
+    value: ${{ steps.version.outputs.new_tag }}
+  previous-tag:
+    description: "The most recent matching tag, or empty string if none exists"
+    value: ${{ steps.version.outputs.previous_tag }}
+  release-type:
+    description: "The bump type applied: major, minor, or patch"
+    value: ${{ steps.version.outputs.release_type }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Compute next version"
+      id: version
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      run: bash "${{ github.action_path }}/../../scripts/next-version.sh" "${{ inputs.service }}"
