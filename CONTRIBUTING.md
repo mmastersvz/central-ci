@@ -4,18 +4,18 @@
 
 All changes must go through a PR. The following checks run automatically:
 
-| Check | Workflow | Runs on |
-| --- | --- | --- |
-| `actionlint` | `ci.yml` | Every PR |
-| `prettier --check` | `ci.yml` | Every PR |
-| `test-setup-git-config` | auto | Every PR |
-| `test-next-version` | auto | Every PR |
-| `test-pr-version` | auto | Every PR |
-| `test-resolve-version` | auto | Every PR |
-| `test-changelog` | auto | Every PR |
-| `test-git-tag` | manual | `workflow_dispatch` only — creates real tags |
-| `test-gh-release` | manual | `workflow_dispatch` only — creates real releases |
-| `test-move-major-tag` | manual | `workflow_dispatch` only — creates real tags |
+| Check                   | Workflow | Runs on                                          |
+| ----------------------- | -------- | ------------------------------------------------ |
+| `actionlint`            | `ci.yml` | Every PR                                         |
+| `prettier --check`      | `ci.yml` | Every PR                                         |
+| `test-setup-git-config` | auto     | Every PR                                         |
+| `test-next-version`     | auto     | Every PR                                         |
+| `test-pr-version`       | auto     | Every PR                                         |
+| `test-resolve-version`  | auto     | Every PR                                         |
+| `test-changelog`        | auto     | Every PR                                         |
+| `test-git-tag`          | manual   | `workflow_dispatch` only — creates real tags     |
+| `test-gh-release`       | manual   | `workflow_dispatch` only — creates real releases |
+| `test-move-major-tag`   | manual   | `workflow_dispatch` only — creates real tags     |
 
 Run the manual tests via `gh workflow run <name>.yml` or the Actions tab before merging any change that touches `git-tag`, `gh-release`, or `move-major-tag`.
 
@@ -47,7 +47,7 @@ Examples from this library: `setup-git-config`, `next-version`, `pr-version`, `r
 
 ### The practical test
 
-Ask: *"Is this a step inside a job, or is this a job?"*
+Ask: _"Is this a step inside a job, or is this a job?"_
 
 - **Step inside a job** → composite action
 - **A job (or a pipeline of jobs)** → reusable workflow

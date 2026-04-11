@@ -113,15 +113,15 @@ act workflow_dispatch -W .github/workflows/test-changelog.yml \
 
 ### Known limitations
 
-| Feature | Supported |
-| --- | --- |
-| Composite actions via `./actions/...` | Yes |
-| Scripts via `scripts/` | Yes |
-| `workflow_dispatch` | Yes |
-| `pull_request` event simulation | Partial |
-| `workflow_call` (reusable workflows) | No |
-| OIDC / `id-token` | No |
-| Some `github.*` context fields | Partial |
+| Feature                               | Supported |
+| ------------------------------------- | --------- |
+| Composite actions via `./actions/...` | Yes       |
+| Scripts via `scripts/`                | Yes       |
+| `workflow_dispatch`                   | Yes       |
+| `pull_request` event simulation       | Partial   |
+| `workflow_call` (reusable workflows)  | No        |
+| OIDC / `id-token`                     | No        |
+| Some `github.*` context fields        | Partial   |
 
 For workflows that use `gh release create` or `git push`, pass a real `GITHUB_TOKEN` — `act` does not stub those out.
 
