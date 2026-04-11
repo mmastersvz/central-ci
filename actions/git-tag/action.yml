@@ -1,0 +1,22 @@
+name: "Git Tag"
+description: "Creates and pushes a Git tag to origin"
+
+inputs:
+  new-tag:
+    description: "The tag name to create and push (e.g. v1.2.3)"
+    required: true
+  token:
+    description: "GitHub token with contents:write permission to push the tag"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Create and push tag"
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        NEW_TAG: ${{ inputs.new-tag }}
+      run: |
+        git tag "$NEW_TAG"
+        git push origin "$NEW_TAG"

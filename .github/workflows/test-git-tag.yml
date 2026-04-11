@@ -1,0 +1,48 @@
+name: "Test: git-tag"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test-creates-tag:
+    name: "Test tag creation and push"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Setup git config"
+        uses: ./actions/setup-git-config
+
+      - name: "Create test tag"
+        uses: ./actions/git-tag
+        with:
+          new-tag: "test-ci-${{ github.run_id }}"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Verify tag exists on remote"
+        shell: bash
+        env:
+          TEST_TAG: "test-ci-${{ github.run_id }}"
+        run: |
+          set -euo pipefail
+          git fetch --tags
+          if git tag | grep -qx "$TEST_TAG"; then
+            echo "OK: tag '$TEST_TAG' found"
+          else
+            echo "FAIL: tag '$TEST_TAG' not found"
+            exit 1
+          fi
+
+      - name: "Delete test tag"
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_TAG: "test-ci-${{ github.run_id }}"
+        run: |
+          set -euo pipefail
+          git push origin --delete "$TEST_TAG" || true

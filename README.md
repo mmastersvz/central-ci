@@ -30,6 +30,26 @@ Configures Git `user.name` and `user.email` globally on the runner.
 | `git-user-name` | Value for `git config user.name` | No | `github-actions[bot]` |
 | `git-user-email` | Value for `git config user.email` | No | `github-actions[bot]@users.noreply.github.com` |
 
+### `git-tag`
+
+Creates and pushes a Git tag to origin. Requires the calling job to have `contents: write` permission.
+
+**Usage:**
+
+```yaml
+- uses: mmastersvz/central-ci/actions/git-tag@v1
+  with:
+    new-tag: "v1.2.3"
+    token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+**Inputs:**
+
+| Name | Description | Required | Default |
+| --- | --- | --- | --- |
+| `new-tag` | Tag name to create and push (e.g. `v1.2.3`) | Yes | — |
+| `token` | GitHub token with `contents:write` permission | Yes | — |
+
 ## Testing
 
 Test workflows live in `.github/workflows/` and are prefixed with `test-`.
