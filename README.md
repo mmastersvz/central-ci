@@ -37,10 +37,10 @@ Configures Git `user.name` and `user.email` globally on the runner.
 
 **Inputs:**
 
-| Name | Description | Required | Default |
-| --- | --- | --- | --- |
-| `git-user-name` | Value for `git config user.name` | No | `github-actions[bot]` |
-| `git-user-email` | Value for `git config user.email` | No | `github-actions[bot]@users.noreply.github.com` |
+| Name             | Description                       | Required | Default                                        |
+| ---------------- | --------------------------------- | -------- | ---------------------------------------------- |
+| `git-user-name`  | Value for `git config user.name`  | No       | `github-actions[bot]`                          |
+| `git-user-email` | Value for `git config user.email` | No       | `github-actions[bot]@users.noreply.github.com` |
 
 ### `git-tag`
 
@@ -57,10 +57,10 @@ Creates and pushes a Git tag to origin. Requires the calling job to have `conten
 
 **Inputs:**
 
-| Name | Description | Required | Default |
-| --- | --- | --- | --- |
-| `new-tag` | Tag name to create and push (e.g. `v1.2.3`) | Yes | — |
-| `token` | GitHub token with `contents:write` permission | Yes | — |
+| Name      | Description                                   | Required | Default |
+| --------- | --------------------------------------------- | -------- | ------- |
+| `new-tag` | Tag name to create and push (e.g. `v1.2.3`)   | Yes      | —       |
+| `token`   | GitHub token with `contents:write` permission | Yes      | —       |
 
 ### `resolve-version`
 
@@ -86,21 +86,21 @@ Auto-selects `next-version` for release builds or `pr-version` for pull request 
 
 **Inputs:**
 
-| Name | Description | Required | Default |
-| --- | --- | --- | --- |
-| `service` | Service name for tag prefixing, passed to `next-version`. | No | `""` |
-| `token` | GitHub token for `git fetch`, passed to `next-version`. | No | `github.token` |
-| `pr-number` | Forces PR versioning when provided, regardless of event type. | No | `""` |
+| Name        | Description                                                   | Required | Default        |
+| ----------- | ------------------------------------------------------------- | -------- | -------------- |
+| `service`   | Service name for tag prefixing, passed to `next-version`.     | No       | `""`           |
+| `token`     | GitHub token for `git fetch`, passed to `next-version`.       | No       | `github.token` |
+| `pr-number` | Forces PR versioning when provided, regardless of event type. | No       | `""`           |
 
 **Outputs (shared contract with both `next-version` and `pr-version`):**
 
-| Name | Release example | PR example |
-| --- | --- | --- |
-| `new-tag` | `v1.2.3` | `0.0.0-pr.123.5.1` |
-| `marketing-version` | `1.2.3` | `0.0.0-pr.123.5.1` |
-| `previous-tag` | `v1.2.2` | `""` |
-| `release-type` | `minor` | `prerelease` |
-| `is-prerelease` | `false` | `true` |
+| Name                | Release example | PR example         |
+| ------------------- | --------------- | ------------------ |
+| `new-tag`           | `v1.2.3`        | `0.0.0-pr.123.5.1` |
+| `marketing-version` | `1.2.3`         | `0.0.0-pr.123.5.1` |
+| `previous-tag`      | `v1.2.2`        | `""`               |
+| `release-type`      | `minor`         | `prerelease`       |
+| `is-prerelease`     | `false`         | `true`             |
 
 ---
 
@@ -120,30 +120,34 @@ Generates a Conventional Commits grouped changelog between two tags. Output is m
 
 **Inputs:**
 
-| Name | Description | Required | Default |
-| --- | --- | --- | --- |
-| `previous-tag` | Tag to diff from. Includes all commits if empty. | No | `""` |
-| `new-tag` | Tag to diff to. | No | `HEAD` |
+| Name           | Description                                      | Required | Default |
+| -------------- | ------------------------------------------------ | -------- | ------- |
+| `previous-tag` | Tag to diff from. Includes all commits if empty. | No       | `""`    |
+| `new-tag`      | Tag to diff to.                                  | No       | `HEAD`  |
 
 **Outputs:**
 
-| Name | Description |
-| --- | --- |
+| Name    | Description                |
+| ------- | -------------------------- |
 | `notes` | Grouped changelog markdown |
 
 **Output format:**
 
 ```markdown
 ## Breaking Changes
+
 - feat!: remove legacy auth endpoint (`a1b2c3d`)
 
 ## Features
+
 - feat: add service prefix support to next-version (`e4f5g6h`)
 
 ## Bug Fixes
+
 - fix: correct GITHUB_RUN_NUMBER usage in shell scripts (`i7j8k9l`)
 
 ## Other Changes
+
 - chore: update actionlint config (`m1n2o3p`)
 
 **Full Changelog**: https://github.com/org/repo/compare/v1.0.0...v1.1.0
@@ -167,15 +171,15 @@ Creates a GitHub release for an existing git tag.
 
 **Inputs:**
 
-| Name | Description | Required | Default |
-| --- | --- | --- | --- |
-| `tag` | Existing git tag to release | Yes | — |
-| `title` | Release title. Falls back to `tag` if omitted. | No | `""` |
-| `token` | GitHub token with `contents:write` permission | Yes | — |
-| `notes` | Release notes markdown. When provided, `generate-notes` is ignored. | No | `""` |
-| `generate-notes` | Auto-generate release notes from merged PRs. Ignored when `notes` is set. | No | `"true"` |
-| `release-type` | Bump type for step summary display only | No | `""` |
-| `previous-tag` | Previous tag for step summary display only | No | `""` |
+| Name             | Description                                                               | Required | Default  |
+| ---------------- | ------------------------------------------------------------------------- | -------- | -------- |
+| `tag`            | Existing git tag to release                                               | Yes      | —        |
+| `title`          | Release title. Falls back to `tag` if omitted.                            | No       | `""`     |
+| `token`          | GitHub token with `contents:write` permission                             | Yes      | —        |
+| `notes`          | Release notes markdown. When provided, `generate-notes` is ignored.       | No       | `""`     |
+| `generate-notes` | Auto-generate release notes from merged PRs. Ignored when `notes` is set. | No       | `"true"` |
+| `release-type`   | Bump type for step summary display only                                   | No       | `""`     |
+| `previous-tag`   | Previous tag for step summary display only                                | No       | `""`     |
 
 ---
 
@@ -183,11 +187,11 @@ Creates a GitHub release for an existing git tag.
 
 Computes the next semver tag from [Conventional Commits](https://www.conventionalcommits.org/). Supports an optional service prefix or plain `vX.Y.Z` tags.
 
-| Commit pattern | Bump |
-| --- | --- |
+| Commit pattern                       | Bump  |
+| ------------------------------------ | ----- |
 | `feat!:`, `fix!:`, `BREAKING CHANGE` | major |
-| `feat:` | minor |
-| anything else | patch |
+| `feat:`                              | minor |
+| anything else                        | patch |
 
 **Usage (plain tags):**
 
@@ -209,18 +213,18 @@ Computes the next semver tag from [Conventional Commits](https://www.conventiona
 
 **Inputs:**
 
-| Name | Description | Required | Default |
-| --- | --- | --- | --- |
-| `service` | Service name used as tag prefix. Omit for plain `vX.Y.Z`. | No | `""` |
-| `token` | GitHub token for `git fetch` on private repos. | No | `github.token` |
+| Name      | Description                                               | Required | Default        |
+| --------- | --------------------------------------------------------- | -------- | -------------- |
+| `service` | Service name used as tag prefix. Omit for plain `vX.Y.Z`. | No       | `""`           |
+| `token`   | GitHub token for `git fetch` on private repos.            | No       | `github.token` |
 
 **Outputs:**
 
-| Name | Description |
-| --- | --- |
-| `new-tag` | The next computed tag (e.g. `v1.2.3` or `my-service/v1.2.3`) |
-| `previous-tag` | The most recent matching tag, or empty string if none exists |
-| `release-type` | The bump type applied: `major`, `minor`, or `patch` |
+| Name                | Description                                                  |
+| ------------------- | ------------------------------------------------------------ |
+| `new-tag`           | The next computed tag (e.g. `v1.2.3` or `my-service/v1.2.3`) |
+| `previous-tag`      | The most recent matching tag, or empty string if none exists |
+| `release-type`      | The bump type applied: `major`, `minor`, or `patch`          |
 | `marketing-version` | The bare version number without prefix or `v` (e.g. `1.2.3`) |
 
 ### `pr-version`
@@ -245,19 +249,19 @@ Computes a pre-release version string for pull request builds. Outputs a SemVer-
 
 **Inputs:**
 
-| Name | Description | Required | Default |
-| --- | --- | --- | --- |
-| `pr-number` | PR number. Auto-detected from event context when omitted. | No | `""` |
+| Name        | Description                                               | Required | Default |
+| ----------- | --------------------------------------------------------- | -------- | ------- |
+| `pr-number` | PR number. Auto-detected from event context when omitted. | No       | `""`    |
 
 **Outputs:**
 
-| Name | Description |
-| --- | --- |
-| `new-tag` | Pre-release version string (e.g. `0.0.0-pr.123.5.1`) |
-| `marketing-version` | Same as `new-tag` for PR builds |
-| `previous-tag` | Always empty for PR builds |
-| `release-type` | Always `prerelease` |
-| `build-id` | Dot-separated build identifier (e.g. `123.5.1`) |
+| Name                | Description                                          |
+| ------------------- | ---------------------------------------------------- |
+| `new-tag`           | Pre-release version string (e.g. `0.0.0-pr.123.5.1`) |
+| `marketing-version` | Same as `new-tag` for PR builds                      |
+| `previous-tag`      | Always empty for PR builds                           |
+| `release-type`      | Always `prerelease`                                  |
+| `build-id`          | Dot-separated build identifier (e.g. `123.5.1`)      |
 
 ### `move-major-tag`
 
@@ -274,15 +278,15 @@ Moves the floating major version tag (e.g. `v1`) to point at a new semver tag. R
 
 **Inputs:**
 
-| Name | Description | Required | Default |
-| --- | --- | --- | --- |
-| `tag` | Full semver tag to derive the major version from (e.g. `v1.2.3` → moves `v1`) | Yes | — |
-| `token` | GitHub token with `contents:write` permission | Yes | — |
+| Name    | Description                                                                   | Required | Default |
+| ------- | ----------------------------------------------------------------------------- | -------- | ------- |
+| `tag`   | Full semver tag to derive the major version from (e.g. `v1.2.3` → moves `v1`) | Yes      | —       |
+| `token` | GitHub token with `contents:write` permission                                 | Yes      | —       |
 
 **Outputs:**
 
-| Name | Description |
-| --- | --- |
+| Name        | Description                                      |
+| ----------- | ------------------------------------------------ |
 | `major-tag` | The major version tag that was moved (e.g. `v1`) |
 
 ---
@@ -292,6 +296,8 @@ Moves the floating major version tag (e.g. `v1`) to point at a new semver tag. R
 See [CONTRIBUTING.md](CONTRIBUTING.md) for architectural guidelines, including when to write a composite action vs. a reusable workflow.
 
 ## Testing
+
+See [TESTING.md](TESTING.md) for full local testing instructions (`act`, `actionlint`, direct script execution).
 
 Test workflows live in `.github/workflows/` and are prefixed with `test-`.
 

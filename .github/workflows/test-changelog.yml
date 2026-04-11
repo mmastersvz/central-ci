@@ -49,9 +49,11 @@ jobs:
           echo "--- changelog output ---"
           echo "$output"
           echo "--- end ---"
-          echo "CHANGELOG_OUTPUT<<__EOF__" >> "$GITHUB_ENV"
-          echo "$output"             >> "$GITHUB_ENV"
-          echo "__EOF__"             >> "$GITHUB_ENV"
+          {
+            echo "CHANGELOG_OUTPUT<<__EOF__"
+            echo "$output"
+            echo "__EOF__"
+          } >> "$GITHUB_ENV"
 
       - name: "Assert Breaking Changes section"
         shell: bash
@@ -131,7 +133,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if ! echo "$CHANGELOG_OUTPUT" | grep -qE '`[0-9a-f]{7}`'; then
+          if ! echo "$CHANGELOG_OUTPUT" | grep -qE "\`[0-9a-f]{7}\`"; then
             echo "FAIL: no short SHA found in output"
             exit 1
           fi

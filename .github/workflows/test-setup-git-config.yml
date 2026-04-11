@@ -1,6 +1,7 @@
 name: "Test: setup-git-config"
 
 on:
+  pull_request:
   workflow_dispatch:
 
 permissions:
