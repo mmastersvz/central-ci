@@ -8,9 +8,18 @@ inputs:
     default: ""
 
 outputs:
-  version:
-    description: "Full pre-release version string (e.g. 0.0.0-pr.123.5.1)"
+  new-tag:
+    description: "Pre-release version string (e.g. 0.0.0-pr.123.5.1). Matches the new-tag contract from next-version."
     value: ${{ steps.pr-version.outputs.version }}
+  marketing-version:
+    description: "Same as new-tag for PR builds (no clean semver exists). Matches next-version contract."
+    value: ${{ steps.pr-version.outputs.version }}
+  previous-tag:
+    description: "Always empty for PR builds. Matches next-version contract."
+    value: ""
+  release-type:
+    description: "Always 'prerelease' for PR builds. Matches next-version contract."
+    value: prerelease
   build-id:
     description: "Dot-separated build identifier (e.g. 123.5.1)"
     value: ${{ steps.pr-version.outputs.build-id }}

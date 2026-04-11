@@ -50,6 +50,48 @@ Creates and pushes a Git tag to origin. Requires the calling job to have `conten
 | `new-tag` | Tag name to create and push (e.g. `v1.2.3`) | Yes | — |
 | `token` | GitHub token with `contents:write` permission | Yes | — |
 
+### `resolve-version`
+
+Auto-selects `next-version` for release builds or `pr-version` for pull request builds and exposes a single unified output contract. This is the recommended entry point for workflows that need version info.
+
+**Usage:**
+
+```yaml
+- uses: mmastersvz/central-ci/actions/resolve-version@v1
+  id: version
+
+- run: echo "Tag is ${{ steps.version.outputs.new-tag }}"
+```
+
+**Force PR versioning (e.g. on `workflow_dispatch` with a PR number):**
+
+```yaml
+- uses: mmastersvz/central-ci/actions/resolve-version@v1
+  id: version
+  with:
+    pr-number: ${{ github.event.inputs.pr-number }}
+```
+
+**Inputs:**
+
+| Name | Description | Required | Default |
+| --- | --- | --- | --- |
+| `service` | Service name for tag prefixing, passed to `next-version`. | No | `""` |
+| `token` | GitHub token for `git fetch`, passed to `next-version`. | No | `github.token` |
+| `pr-number` | Forces PR versioning when provided, regardless of event type. | No | `""` |
+
+**Outputs (shared contract with both `next-version` and `pr-version`):**
+
+| Name | Release example | PR example |
+| --- | --- | --- |
+| `new-tag` | `v1.2.3` | `0.0.0-pr.123.5.1` |
+| `marketing-version` | `1.2.3` | `0.0.0-pr.123.5.1` |
+| `previous-tag` | `v1.2.2` | `""` |
+| `release-type` | `minor` | `prerelease` |
+| `is-prerelease` | `false` | `true` |
+
+---
+
 ### `next-version`
 
 Computes the next semver tag from [Conventional Commits](https://www.conventionalcommits.org/). Supports an optional service prefix or plain `vX.Y.Z` tags.
@@ -131,7 +173,10 @@ Computes a pre-release version string for pull request builds. Outputs a SemVer-
 
 | Name | Description |
 | --- | --- |
-| `version` | Full pre-release version string (e.g. `0.0.0-pr.123.5.1`) |
+| `new-tag` | Pre-release version string (e.g. `0.0.0-pr.123.5.1`) |
+| `marketing-version` | Same as `new-tag` for PR builds |
+| `previous-tag` | Always empty for PR builds |
+| `release-type` | Always `prerelease` |
 | `build-id` | Dot-separated build identifier (e.g. `123.5.1`) |
 
 ## Testing

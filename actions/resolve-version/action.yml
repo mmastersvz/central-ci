@@ -1,0 +1,51 @@
+name: "Resolve Version"
+description: "Selects next-version for release builds or pr-version for pull request builds and exposes a unified output contract."
+
+inputs:
+  service:
+    description: "Optional service name for tag prefixing, passed through to next-version (e.g. 'my-service' produces 'my-service/v1.2.3')."
+    required: false
+    default: ""
+  token:
+    description: "GitHub token for git fetch. Passed through to next-version."
+    required: false
+    default: ${{ github.token }}
+  pr-number:
+    description: "Pull request number override. When provided, forces PR versioning regardless of event type."
+    required: false
+    default: ""
+
+outputs:
+  new-tag:
+    description: "Computed version tag: semver for releases (e.g. v1.2.3), pre-release for PRs (e.g. 0.0.0-pr.123.5.1)"
+    value: ${{ steps.release.outputs.new-tag || steps.pr.outputs.new-tag }}
+  marketing-version:
+    description: "Bare version without prefix or v (e.g. 1.2.3 or 0.0.0-pr.123.5.1)"
+    value: ${{ steps.release.outputs.marketing-version || steps.pr.outputs.marketing-version }}
+  previous-tag:
+    description: "Previous release tag. Empty for PR builds."
+    value: ${{ steps.release.outputs.previous-tag }}
+  release-type:
+    description: "Bump type: major, minor, patch, or prerelease"
+    value: ${{ steps.release.outputs.release-type || steps.pr.outputs.release-type }}
+  is-prerelease:
+    description: "'true' for PR builds, 'false' for release builds"
+    value: ${{ steps.pr.outcome == 'success' }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Compute release version"
+      id: release
+      if: github.event_name != 'pull_request' && inputs.pr-number == ''
+      uses: ./actions/next-version
+      with:
+        service: ${{ inputs.service }}
+        token: ${{ inputs.token }}
+
+    - name: "Compute PR version"
+      id: pr
+      if: github.event_name == 'pull_request' || inputs.pr-number != ''
+      uses: ./actions/pr-version
+      with:
+        pr-number: ${{ inputs.pr-number }}

@@ -1,0 +1,120 @@
+name: "Test: resolve-version"
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-release-path:
+    name: "Test release path (non-PR event)"
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Resolve version"
+        id: version
+        uses: ./actions/resolve-version
+
+      - name: "Verify release outputs"
+        shell: bash
+        env:
+          NEW_TAG: ${{ steps.version.outputs.new-tag }}
+          MARKETING: ${{ steps.version.outputs.marketing-version }}
+          RELEASE_TYPE: ${{ steps.version.outputs.release-type }}
+          IS_PRERELEASE: ${{ steps.version.outputs.is-prerelease }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$NEW_TAG" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "FAIL: new-tag '$NEW_TAG' is not a semver tag"
+            exit 1
+          fi
+          if [[ ! "$MARKETING" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "FAIL: marketing-version '$MARKETING' does not match X.Y.Z"
+            exit 1
+          fi
+          if [[ ! "$RELEASE_TYPE" =~ ^(major|minor|patch)$ ]]; then
+            echo "FAIL: release-type '$RELEASE_TYPE' is not major/minor/patch"
+            exit 1
+          fi
+          if [[ "$IS_PRERELEASE" != "false" ]]; then
+            echo "FAIL: is-prerelease should be 'false' for release builds, got '$IS_PRERELEASE'"
+            exit 1
+          fi
+          echo "OK: new-tag=$NEW_TAG marketing=$MARKETING release-type=$RELEASE_TYPE is-prerelease=$IS_PRERELEASE"
+
+  test-pr-path:
+    name: "Test PR path (pull_request event)"
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Resolve version"
+        id: version
+        uses: ./actions/resolve-version
+
+      - name: "Verify PR outputs"
+        shell: bash
+        env:
+          NEW_TAG: ${{ steps.version.outputs.new-tag }}
+          MARKETING: ${{ steps.version.outputs.marketing-version }}
+          RELEASE_TYPE: ${{ steps.version.outputs.release-type }}
+          IS_PRERELEASE: ${{ steps.version.outputs.is-prerelease }}
+          PREVIOUS_TAG: ${{ steps.version.outputs.previous-tag }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$NEW_TAG" =~ ^0\.0\.0-pr\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "FAIL: new-tag '$NEW_TAG' does not match PR pre-release format"
+            exit 1
+          fi
+          if [[ "$RELEASE_TYPE" != "prerelease" ]]; then
+            echo "FAIL: release-type should be 'prerelease', got '$RELEASE_TYPE'"
+            exit 1
+          fi
+          if [[ "$IS_PRERELEASE" != "true" ]]; then
+            echo "FAIL: is-prerelease should be 'true', got '$IS_PRERELEASE'"
+            exit 1
+          fi
+          if [[ -n "$PREVIOUS_TAG" ]]; then
+            echo "FAIL: previous-tag should be empty for PR builds, got '$PREVIOUS_TAG'"
+            exit 1
+          fi
+          echo "OK: new-tag=$NEW_TAG release-type=$RELEASE_TYPE is-prerelease=$IS_PRERELEASE"
+
+  test-forced-pr-path:
+    name: "Test forced PR path via pr-number input"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Resolve version with explicit pr-number"
+        id: version
+        uses: ./actions/resolve-version
+        with:
+          pr-number: "99"
+
+      - name: "Verify forced PR outputs"
+        shell: bash
+        env:
+          NEW_TAG: ${{ steps.version.outputs.new-tag }}
+          IS_PRERELEASE: ${{ steps.version.outputs.is-prerelease }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$NEW_TAG" =~ ^0\.0\.0-pr\.99\. ]]; then
+            echo "FAIL: new-tag '$NEW_TAG' should start with 0.0.0-pr.99."
+            exit 1
+          fi
+          if [[ "$IS_PRERELEASE" != "true" ]]; then
+            echo "FAIL: is-prerelease should be 'true', got '$IS_PRERELEASE'"
+            exit 1
+          fi
+          echo "OK: new-tag=$NEW_TAG is-prerelease=$IS_PRERELEASE"
