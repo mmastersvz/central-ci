@@ -20,3 +20,6 @@ runs:
       run: |
         git tag "$NEW_TAG"
         git push origin "$NEW_TAG"
+
+        echo "### TAG" >> "$GITHUB_STEP_SUMMARY"
+        echo "[${NEW_TAG}](https://github.com/${{ github.repository }}/releases/tag/${NEW_TAG})" >> "$GITHUB_STEP_SUMMARY"
