@@ -179,6 +179,10 @@ Computes a pre-release version string for pull request builds. Outputs a SemVer-
 | `release-type` | Always `prerelease` |
 | `build-id` | Dot-separated build identifier (e.g. `123.5.1`) |
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for architectural guidelines, including when to write a composite action vs. a reusable workflow.
+
 ## Testing
 
 Test workflows live in `.github/workflows/` and are prefixed with `test-`.
