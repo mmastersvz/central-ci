@@ -26,6 +26,13 @@ jobs:
         id: version
         uses: ./actions/resolve-version
 
+      - name: "Generate changelog"
+        id: changelog
+        uses: ./actions/changelog
+        with:
+          previous-tag: ${{ steps.version.outputs.previous-tag }}
+          new-tag: ${{ steps.version.outputs.new-tag }}
+
       - name: "Create and push tag"
         uses: ./actions/git-tag
         with:
@@ -38,6 +45,7 @@ jobs:
           tag: ${{ steps.version.outputs.new-tag }}
           title: ${{ steps.version.outputs.marketing-version }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          notes: ${{ steps.changelog.outputs.notes }}
           release-type: ${{ steps.version.outputs.release-type }}
           previous-tag: ${{ steps.version.outputs.previous-tag }}
 

@@ -104,6 +104,53 @@ Auto-selects `next-version` for release builds or `pr-version` for pull request 
 
 ---
 
+### `changelog`
+
+Generates a Conventional Commits grouped changelog between two tags. Output is markdown suitable for passing directly to `gh-release`.
+
+**Usage:**
+
+```yaml
+- uses: mmastersvz/central-ci/actions/changelog@v1
+  id: changelog
+  with:
+    previous-tag: ${{ steps.version.outputs.previous-tag }}
+    new-tag: ${{ steps.version.outputs.new-tag }}
+```
+
+**Inputs:**
+
+| Name | Description | Required | Default |
+| --- | --- | --- | --- |
+| `previous-tag` | Tag to diff from. Includes all commits if empty. | No | `""` |
+| `new-tag` | Tag to diff to. | No | `HEAD` |
+
+**Outputs:**
+
+| Name | Description |
+| --- | --- |
+| `notes` | Grouped changelog markdown |
+
+**Output format:**
+
+```markdown
+## Breaking Changes
+- feat!: remove legacy auth endpoint (`a1b2c3d`)
+
+## Features
+- feat: add service prefix support to next-version (`e4f5g6h`)
+
+## Bug Fixes
+- fix: correct GITHUB_RUN_NUMBER usage in shell scripts (`i7j8k9l`)
+
+## Other Changes
+- chore: update actionlint config (`m1n2o3p`)
+
+**Full Changelog**: https://github.com/org/repo/compare/v1.0.0...v1.1.0
+```
+
+---
+
 ### `gh-release`
 
 Creates a GitHub release for an existing git tag.
@@ -125,7 +172,8 @@ Creates a GitHub release for an existing git tag.
 | `tag` | Existing git tag to release | Yes | — |
 | `title` | Release title. Falls back to `tag` if omitted. | No | `""` |
 | `token` | GitHub token with `contents:write` permission | Yes | — |
-| `generate-notes` | Auto-generate release notes from merged PRs | No | `"true"` |
+| `notes` | Release notes markdown. When provided, `generate-notes` is ignored. | No | `""` |
+| `generate-notes` | Auto-generate release notes from merged PRs. Ignored when `notes` is set. | No | `"true"` |
 | `release-type` | Bump type for step summary display only | No | `""` |
 | `previous-tag` | Previous tag for step summary display only | No | `""` |
 

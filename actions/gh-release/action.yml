@@ -12,8 +12,12 @@ inputs:
   token:
     description: "GitHub token with contents:write permission"
     required: true
+  notes:
+    description: "Release notes markdown. When provided, used instead of generate-notes."
+    required: false
+    default: ""
   generate-notes:
-    description: "Auto-generate release notes from merged PRs since the previous tag"
+    description: "Auto-generate release notes from merged PRs. Ignored when notes is provided."
     required: false
     default: "true"
   release-type:
@@ -34,15 +38,23 @@ runs:
         GH_TOKEN: ${{ inputs.token }}
         TAG: ${{ inputs.tag }}
         TITLE: ${{ inputs.title || inputs.tag }}
+        NOTES: ${{ inputs.notes }}
         GENERATE_NOTES: ${{ inputs.generate-notes }}
         RELEASE_TYPE: ${{ inputs.release-type }}
         PREVIOUS_TAG: ${{ inputs.previous-tag }}
       run: |
         set -euo pipefail
 
-        notes_flag=""
-        if [[ "$GENERATE_NOTES" == "true" ]]; then
+        notes_file=$(mktemp)
+        trap 'rm -f "$notes_file"' EXIT
+
+        if [[ -n "$NOTES" ]]; then
+          echo "$NOTES" > "$notes_file"
+          notes_flag="--notes-file $notes_file"
+        elif [[ "$GENERATE_NOTES" == "true" ]]; then
           notes_flag="--generate-notes"
+        else
+          notes_flag=""
         fi
 
         # shellcheck disable=SC2086

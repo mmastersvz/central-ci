@@ -1,0 +1,37 @@
+name: "Changelog"
+description: "Generates a Conventional Commits grouped changelog between two tags"
+
+inputs:
+  previous-tag:
+    description: "Tag to diff from. When empty, includes all commits."
+    required: false
+    default: ""
+  new-tag:
+    description: "Tag to diff to. Defaults to HEAD."
+    required: false
+    default: "HEAD"
+
+outputs:
+  notes:
+    description: "Generated changelog markdown"
+    value: ${{ steps.generate.outputs.notes }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Generate changelog"
+      id: generate
+      shell: bash
+      env:
+        PREVIOUS_TAG: ${{ inputs.previous-tag }}
+        NEW_TAG: ${{ inputs.new-tag }}
+      run: |
+        set -euo pipefail
+        notes=$(bash "${{ github.action_path }}/../../scripts/generate-changelog.sh" "$PREVIOUS_TAG" "$NEW_TAG")
+
+        # Multiline output requires heredoc delimiter syntax
+        {
+          echo "notes<<__CHANGELOG_EOF__"
+          echo "$notes"
+          echo "__CHANGELOG_EOF__"
+        } >> "$GITHUB_OUTPUT"
