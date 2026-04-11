@@ -1,0 +1,44 @@
+name: "PR Version"
+description: "Computes a pre-release version string for pull request builds (e.g. 0.0.0-pr.123.1.1)"
+
+inputs:
+  pr-number:
+    description: "Pull request number. Defaults to the PR number from the triggering event."
+    required: false
+    default: ""
+
+outputs:
+  version:
+    description: "Full pre-release version string (e.g. 0.0.0-pr.123.5.1)"
+    value: ${{ steps.pr-version.outputs.version }}
+  build-id:
+    description: "Dot-separated build identifier (e.g. 123.5.1)"
+    value: ${{ steps.pr-version.outputs.build-id }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Compute PR version"
+      id: pr-version
+      shell: bash
+      env:
+        PR_NUM: ${{ inputs.pr-number || github.event.pull_request.number || '0' }}
+      run: |
+        set -euo pipefail
+
+        BUILD_ID="${PR_NUM}.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+        FULL_VERSION="0.0.0-pr.${PR_NUM}.${GITHUB_RUN_NUMBER}.${GITHUB_RUN_ATTEMPT}"
+
+        echo "build-id=${BUILD_ID}" >> "$GITHUB_OUTPUT"
+        echo "version=${FULL_VERSION}" >> "$GITHUB_OUTPUT"
+
+        {
+          echo "### PR Build Version"
+          echo ""
+          echo "| | |"
+          echo "| --- | --- |"
+          echo "| **PR number** | ${PR_NUM} |"
+          echo "| **Run** | ${GITHUB_RUN_NUMBER} (attempt ${GITHUB_RUN_ATTEMPT}) |"
+          echo "| **Version** | \`${FULL_VERSION}\` |"
+          echo "| **Build ID** | \`${BUILD_ID}\` |"
+        } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,67 @@
+name: "Test: pr-version"
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-auto-context:
+    name: "Test with automatic PR context"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Compute PR version"
+        id: version
+        uses: ./actions/pr-version
+
+      - name: "Verify output format"
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          BUILD_ID: ${{ steps.version.outputs.build-id }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$VERSION" =~ ^0\.0\.0-pr\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "FAIL: version '$VERSION' does not match 0.0.0-pr.X.Y.Z"
+            exit 1
+          fi
+          if [[ ! "$BUILD_ID" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "FAIL: build-id '$BUILD_ID' does not match X.Y.Z"
+            exit 1
+          fi
+          echo "OK: version=$VERSION build-id=$BUILD_ID"
+
+  test-explicit-pr-number:
+    name: "Test with explicit pr-number"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Compute PR version with explicit pr-number"
+        id: version
+        uses: ./actions/pr-version
+        with:
+          pr-number: "42"
+
+      - name: "Verify pr-number is reflected in outputs"
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          BUILD_ID: ${{ steps.version.outputs.build-id }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$VERSION" =~ ^0\.0\.0-pr\.42\.[0-9]+\.[0-9]+$ ]]; then
+            echo "FAIL: version '$VERSION' does not start with 0.0.0-pr.42."
+            exit 1
+          fi
+          if [[ ! "$BUILD_ID" =~ ^42\.[0-9]+\.[0-9]+$ ]]; then
+            echo "FAIL: build-id '$BUILD_ID' does not start with 42."
+            exit 1
+          fi
+          echo "OK: version=$VERSION build-id=$BUILD_ID"

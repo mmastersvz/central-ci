@@ -94,6 +94,46 @@ Computes the next semver tag from [Conventional Commits](https://www.conventiona
 | `release-type` | The bump type applied: `major`, `minor`, or `patch` |
 | `marketing-version` | The bare version number without prefix or `v` (e.g. `1.2.3`) |
 
+### `pr-version`
+
+Computes a pre-release version string for pull request builds. Outputs a SemVer-compatible pre-release version and a dot-separated build identifier.
+
+| Output | Example |
+| --- | --- |
+| `version` | `0.0.0-pr.123.5.1` |
+| `build-id` | `123.5.1` |
+
+**Usage (automatic — no inputs needed in a PR context):**
+
+```yaml
+- uses: mmastersvz/central-ci/actions/pr-version@v1
+  id: version
+```
+
+**Usage (explicit inputs):**
+
+```yaml
+- uses: mmastersvz/central-ci/actions/pr-version@v1
+  id: version
+  with:
+    pr-number: ${{ github.event.pull_request.number }}
+    run-number: ${{ github.run_number }}
+    run-attempt: ${{ github.run_attempt }}
+```
+
+**Inputs:**
+
+| Name | Description | Required | Default |
+| --- | --- | --- | --- |
+| `pr-number` | PR number. Auto-detected from event context when omitted. | No | `""` |
+
+**Outputs:**
+
+| Name | Description |
+| --- | --- |
+| `version` | Full pre-release version string (e.g. `0.0.0-pr.123.5.1`) |
+| `build-id` | Dot-separated build identifier (e.g. `123.5.1`) |
+
 ## Testing
 
 Test workflows live in `.github/workflows/` and are prefixed with `test-`.
