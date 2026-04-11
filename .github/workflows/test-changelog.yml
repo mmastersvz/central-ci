@@ -1,0 +1,186 @@
+name: "Test: changelog"
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test-script-logic:
+    name: "Test changelog script against controlled history"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Build controlled git history"
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp=$(mktemp -d)
+          git init "$tmp"
+          git -C "$tmp" config user.email "ci@test.local"
+          git -C "$tmp" config user.name "CI"
+
+          # Seed a base commit and tag it as v0.0.0
+          git -C "$tmp" commit --allow-empty -m "chore: init"
+          git -C "$tmp" tag v0.0.0
+
+          # Commits that should appear in the changelog
+          git -C "$tmp" commit --allow-empty -m "feat!: remove legacy auth"
+          git -C "$tmp" commit --allow-empty -m "feat: add service prefix support"
+          git -C "$tmp" commit --allow-empty -m "feat(core): add retry logic"
+          git -C "$tmp" commit --allow-empty -m "fix: correct env var reference"
+          git -C "$tmp" commit --allow-empty -m "chore: update deps"
+          git -C "$tmp" commit --allow-empty -m "docs: update README"
+
+          echo "REPO=$tmp" >> "$GITHUB_ENV"
+
+      - name: "Run script and capture output"
+        shell: bash
+        env:
+          GITHUB_SERVER_URL: "https://github.com"
+          GITHUB_REPOSITORY: "mmastersvz/central-ci"
+        run: |
+          set -euo pipefail
+          output=$(cd "$REPO" && bash "$GITHUB_WORKSPACE/scripts/generate-changelog.sh" "v0.0.0" "HEAD")
+          echo "--- changelog output ---"
+          echo "$output"
+          echo "--- end ---"
+          echo "CHANGELOG_OUTPUT<<__EOF__" >> "$GITHUB_ENV"
+          echo "$output"             >> "$GITHUB_ENV"
+          echo "__EOF__"             >> "$GITHUB_ENV"
+
+      - name: "Assert Breaking Changes section"
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! echo "$CHANGELOG_OUTPUT" | grep -q "## Breaking Changes"; then
+            echo "FAIL: missing '## Breaking Changes' section"
+            exit 1
+          fi
+          if ! echo "$CHANGELOG_OUTPUT" | grep -q "feat!: remove legacy auth"; then
+            echo "FAIL: breaking commit not listed"
+            exit 1
+          fi
+          echo "OK: Breaking Changes section present"
+
+      - name: "Assert Features section"
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! echo "$CHANGELOG_OUTPUT" | grep -q "## Features"; then
+            echo "FAIL: missing '## Features' section"
+            exit 1
+          fi
+          if ! echo "$CHANGELOG_OUTPUT" | grep -q "feat: add service prefix support"; then
+            echo "FAIL: feat commit not listed"
+            exit 1
+          fi
+          if ! echo "$CHANGELOG_OUTPUT" | grep -q "feat(core): add retry logic"; then
+            echo "FAIL: scoped feat commit not listed"
+            exit 1
+          fi
+          echo "OK: Features section present"
+
+      - name: "Assert Bug Fixes section"
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! echo "$CHANGELOG_OUTPUT" | grep -q "## Bug Fixes"; then
+            echo "FAIL: missing '## Bug Fixes' section"
+            exit 1
+          fi
+          if ! echo "$CHANGELOG_OUTPUT" | grep -q "fix: correct env var reference"; then
+            echo "FAIL: fix commit not listed"
+            exit 1
+          fi
+          echo "OK: Bug Fixes section present"
+
+      - name: "Assert Other Changes section"
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! echo "$CHANGELOG_OUTPUT" | grep -q "## Other Changes"; then
+            echo "FAIL: missing '## Other Changes' section"
+            exit 1
+          fi
+          if ! echo "$CHANGELOG_OUTPUT" | grep -q "chore: update deps"; then
+            echo "FAIL: chore commit not listed"
+            exit 1
+          fi
+          echo "OK: Other Changes section present"
+
+      - name: "Assert Full Changelog link"
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! echo "$CHANGELOG_OUTPUT" | grep -q "Full Changelog"; then
+            echo "FAIL: missing Full Changelog link"
+            exit 1
+          fi
+          if ! echo "$CHANGELOG_OUTPUT" | grep -q "v0.0.0"; then
+            echo "FAIL: previous tag not referenced in Full Changelog link"
+            exit 1
+          fi
+          echo "OK: Full Changelog link present"
+
+      - name: "Assert short SHAs are included"
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! echo "$CHANGELOG_OUTPUT" | grep -qE '\`[0-9a-f]{7}\`'; then
+            echo "FAIL: no short SHA found in output"
+            exit 1
+          fi
+          echo "OK: short SHAs present"
+
+      - name: "Assert no-previous-tag path (all commits)"
+        shell: bash
+        env:
+          GITHUB_SERVER_URL: "https://github.com"
+          GITHUB_REPOSITORY: "mmastersvz/central-ci"
+        run: |
+          set -euo pipefail
+          output=$(cd "$REPO" && bash "$GITHUB_WORKSPACE/scripts/generate-changelog.sh" "" "HEAD")
+          if ! echo "$output" | grep -q "feat!: remove legacy auth"; then
+            echo "FAIL: commits missing when no previous tag given"
+            exit 1
+          fi
+          if echo "$output" | grep -q "Full Changelog"; then
+            echo "FAIL: Full Changelog link should be absent when no previous tag"
+            exit 1
+          fi
+          echo "OK: no-previous-tag path works"
+
+  test-action-wiring:
+    name: "Test action outputs against real repo"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Run changelog action"
+        id: changelog
+        uses: ./actions/changelog
+        with:
+          previous-tag: ""
+          new-tag: "HEAD"
+
+      - name: "Verify notes output is non-empty"
+        shell: bash
+        env:
+          NOTES: ${{ steps.changelog.outputs.notes }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$NOTES" ]]; then
+            echo "FAIL: notes output is empty"
+            exit 1
+          fi
+          echo "OK: notes output is non-empty"
+          echo "--- notes ---"
+          echo "$NOTES"
