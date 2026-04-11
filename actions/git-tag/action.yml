@@ -18,8 +18,15 @@ runs:
         GH_TOKEN: ${{ inputs.token }}
         NEW_TAG: ${{ inputs.new-tag }}
       run: |
+        git fetch --tags
         git tag "$NEW_TAG"
         git push origin "$NEW_TAG"
 
-        echo "### TAG" >> "$GITHUB_STEP_SUMMARY"
-        echo "[${NEW_TAG}](https://github.com/${{ github.repository }}/releases/tag/${NEW_TAG})" >> "$GITHUB_STEP_SUMMARY"
+        {
+          echo "### Tag"
+          echo ""
+          echo "| | |"
+          echo "| --- | --- |"
+          echo "| **Tag** | \`${NEW_TAG}\` |"
+          echo "| **Link** | [${NEW_TAG}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${NEW_TAG}) |"
+        } >> "$GITHUB_STEP_SUMMARY"
