@@ -32,4 +32,15 @@ Configures Git `user.name` and `user.email` globally on the runner.
 
 ## Testing
 
-Trigger the test suite via `workflow_dispatch` on any workflow under `tests/`.
+Test workflows live in `.github/workflows/` and are prefixed with `test-`.
+
+To run them:
+
+1. Go to **Actions** → select the test workflow (e.g. `Test: setup-git-config`)
+2. Click **Run workflow** → choose a branch → **Run workflow**
+
+Or via CLI:
+
+```sh
+gh workflow run test-setup-git-config.yml
+```
