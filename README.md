@@ -293,6 +293,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for architectural guidelines, including w
 
 ## Testing
 
+See [TESTING.md](TESTING.md) for full local testing instructions (`act`, `actionlint`, direct script execution).
+
 Test workflows live in `.github/workflows/` and are prefixed with `test-`.
 
 To run them:
