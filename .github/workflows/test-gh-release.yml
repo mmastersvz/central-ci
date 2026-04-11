@@ -1,0 +1,56 @@
+name: "Test: gh-release"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test-creates-release:
+    name: "Test release creation"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Setup git config"
+        uses: ./actions/setup-git-config
+
+      - name: "Create test tag"
+        uses: ./actions/git-tag
+        with:
+          new-tag: "test-release-ci-${{ github.run_id }}"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Create test release"
+        uses: ./actions/gh-release
+        with:
+          tag: "test-release-ci-${{ github.run_id }}"
+          title: "CI Test Release ${{ github.run_id }}"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release-type: "patch"
+          previous-tag: ""
+
+      - name: "Verify release exists"
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_TAG: "test-release-ci-${{ github.run_id }}"
+        run: |
+          set -euo pipefail
+          gh release view "$TEST_TAG"
+          echo "OK: release '$TEST_TAG' exists"
+
+      - name: "Delete test release and tag"
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_TAG: "test-release-ci-${{ github.run_id }}"
+        run: |
+          set -euo pipefail
+          gh release delete "$TEST_TAG" --yes || true
+          git push origin --delete "$TEST_TAG" || true

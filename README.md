@@ -92,6 +92,33 @@ Auto-selects `next-version` for release builds or `pr-version` for pull request 
 
 ---
 
+### `gh-release`
+
+Creates a GitHub release for an existing git tag.
+
+**Usage:**
+
+```yaml
+- uses: mmastersvz/central-ci/actions/gh-release@v1
+  with:
+    tag: ${{ steps.version.outputs.new-tag }}
+    title: ${{ steps.version.outputs.marketing-version }}
+    token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+**Inputs:**
+
+| Name | Description | Required | Default |
+| --- | --- | --- | --- |
+| `tag` | Existing git tag to release | Yes | — |
+| `title` | Release title. Falls back to `tag` if omitted. | No | `""` |
+| `token` | GitHub token with `contents:write` permission | Yes | — |
+| `generate-notes` | Auto-generate release notes from merged PRs | No | `"true"` |
+| `release-type` | Bump type for step summary display only | No | `""` |
+| `previous-tag` | Previous tag for step summary display only | No | `""` |
+
+---
+
 ### `next-version`
 
 Computes the next semver tag from [Conventional Commits](https://www.conventionalcommits.org/). Supports an optional service prefix or plain `vX.Y.Z` tags.

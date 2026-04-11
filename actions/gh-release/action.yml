@@ -1,0 +1,63 @@
+name: "GitHub Release"
+description: "Creates a GitHub release for an existing tag"
+
+inputs:
+  tag:
+    description: "The existing git tag to release (e.g. v1.2.3)"
+    required: true
+  title:
+    description: "Release title. Defaults to the tag name if omitted."
+    required: false
+    default: ""
+  token:
+    description: "GitHub token with contents:write permission"
+    required: true
+  generate-notes:
+    description: "Auto-generate release notes from merged PRs since the previous tag"
+    required: false
+    default: "true"
+  release-type:
+    description: "Bump type (major, minor, patch) — used only for the step summary display"
+    required: false
+    default: ""
+  previous-tag:
+    description: "Previous tag — used only for the step summary display"
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Create release"
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        TAG: ${{ inputs.tag }}
+        TITLE: ${{ inputs.title || inputs.tag }}
+        GENERATE_NOTES: ${{ inputs.generate-notes }}
+        RELEASE_TYPE: ${{ inputs.release-type }}
+        PREVIOUS_TAG: ${{ inputs.previous-tag }}
+      run: |
+        set -euo pipefail
+
+        notes_flag=""
+        if [[ "$GENERATE_NOTES" == "true" ]]; then
+          notes_flag="--generate-notes"
+        fi
+
+        # shellcheck disable=SC2086
+        gh release create "$TAG" \
+          --title "$TITLE" \
+          --latest \
+          $notes_flag
+
+        {
+          echo "### Release"
+          echo ""
+          echo "| | |"
+          echo "| --- | --- |"
+          echo "| **Version** | \`${TITLE}\` |"
+          echo "| **Bump** | ${RELEASE_TYPE:-n/a} |"
+          echo "| **Previous** | \`${PREVIOUS_TAG:-none}\` |"
+          echo "| **Release** | [${TAG}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${TAG}) |"
+        } >> "$GITHUB_STEP_SUMMARY"
