@@ -1,0 +1,53 @@
+name: "Release"
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: "Tag and release"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Setup git config"
+        uses: ./actions/setup-git-config
+
+      - name: "Resolve version"
+        id: version
+        uses: ./actions/resolve-version
+
+      - name: "Create and push tag"
+        uses: ./actions/git-tag
+        with:
+          new-tag: ${{ steps.version.outputs.new-tag }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Create GitHub release"
+        uses: ./actions/gh-release
+        with:
+          tag: ${{ steps.version.outputs.new-tag }}
+          title: ${{ steps.version.outputs.marketing-version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release-type: ${{ steps.version.outputs.release-type }}
+          previous-tag: ${{ steps.version.outputs.previous-tag }}
+
+      - name: "Move major version tag"
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_TAG: ${{ steps.version.outputs.new-tag }}
+        run: |
+          set -euo pipefail
+          major_tag="v$(echo "$NEW_TAG" | cut -d. -f1 | tr -d 'v')"
+          git tag --force "$major_tag"
+          git push origin --force "refs/tags/${major_tag}"

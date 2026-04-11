@@ -2,6 +2,18 @@
 
 A library of reusable GitHub Actions composite actions and workflows.
 
+## Versioning
+
+This repo uses a single version for all actions. Pin to a major version tag (e.g. `@v1`) to receive patch and minor updates automatically. A new major version is only cut for breaking input or output changes.
+
+```yaml
+# Recommended — receives non-breaking updates automatically
+uses: mmastersvz/central-ci/actions/resolve-version@v1
+
+# Pinned — use when you need a specific fix or need to audit changes
+uses: mmastersvz/central-ci/actions/resolve-version@v1.2.3
+```
+
 ## Actions
 
 ### `setup-git-config`
