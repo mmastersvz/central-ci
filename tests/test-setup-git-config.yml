@@ -1,0 +1,65 @@
+name: "Test: setup-git-config"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-defaults:
+    name: "Test default git config"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Run setup-git-config with defaults"
+        uses: ./actions/setup-git-config
+
+      - name: "Verify defaults"
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual_name=$(git config --global user.name)
+          actual_email=$(git config --global user.email)
+          expected_name="github-actions[bot]"
+          expected_email="github-actions[bot]@users.noreply.github.com"
+          if [[ "$actual_name" != "$expected_name" ]]; then
+            echo "FAIL: user.name='$actual_name', expected '$expected_name'"
+            exit 1
+          fi
+          if [[ "$actual_email" != "$expected_email" ]]; then
+            echo "FAIL: user.email='$actual_email', expected '$expected_email'"
+            exit 1
+          fi
+          echo "OK: defaults verified"
+
+  test-custom:
+    name: "Test custom git config"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Run setup-git-config with custom values"
+        uses: ./actions/setup-git-config
+        with:
+          git-user-name: "my-bot"
+          git-user-email: "my-bot@example.com"
+
+      - name: "Verify custom values"
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual_name=$(git config --global user.name)
+          actual_email=$(git config --global user.email)
+          if [[ "$actual_name" != "my-bot" ]]; then
+            echo "FAIL: user.name='$actual_name', expected 'my-bot'"
+            exit 1
+          fi
+          if [[ "$actual_email" != "my-bot@example.com" ]]; then
+            echo "FAIL: user.email='$actual_email', expected 'my-bot@example.com'"
+            exit 1
+          fi
+          echo "OK: custom values verified"
