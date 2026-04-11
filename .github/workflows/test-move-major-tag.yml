@@ -1,0 +1,109 @@
+name: "Test: move-major-tag"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test-moves-major-tag:
+    name: "Test major tag is created and moved"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Setup git config"
+        uses: ./actions/setup-git-config
+
+      - name: "Create versioned test tag"
+        uses: ./actions/git-tag
+        with:
+          new-tag: "test-major-ci-${{ github.run_id }}.0.0"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Move major tag"
+        id: move
+        uses: ./actions/move-major-tag
+        with:
+          tag: "test-major-ci-${{ github.run_id }}.0.0"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Verify major-tag output"
+        shell: bash
+        env:
+          MAJOR_TAG: ${{ steps.move.outputs.major-tag }}
+          EXPECTED: "vtest-major-ci-${{ github.run_id }}"
+        run: |
+          set -euo pipefail
+          if [[ "$MAJOR_TAG" != "$EXPECTED" ]]; then
+            echo "FAIL: major-tag='$MAJOR_TAG', expected '$EXPECTED'"
+            exit 1
+          fi
+          echo "OK: major-tag output='$MAJOR_TAG'"
+
+      - name: "Verify major tag points to versioned tag commit"
+        shell: bash
+        env:
+          MAJOR_TAG: ${{ steps.move.outputs.major-tag }}
+          VERSIONED_TAG: "test-major-ci-${{ github.run_id }}.0.0"
+        run: |
+          set -euo pipefail
+          git fetch --tags
+          major_sha=$(git rev-list -n1 "$MAJOR_TAG")
+          versioned_sha=$(git rev-list -n1 "$VERSIONED_TAG")
+          if [[ "$major_sha" != "$versioned_sha" ]]; then
+            echo "FAIL: major tag SHA ($major_sha) does not match versioned tag SHA ($versioned_sha)"
+            exit 1
+          fi
+          echo "OK: major tag points to same commit as versioned tag"
+
+      - name: "Create a second versioned tag and move major again"
+        uses: ./actions/git-tag
+        with:
+          new-tag: "test-major-ci-${{ github.run_id }}.0.1"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Move major tag forward"
+        id: move-again
+        uses: ./actions/move-major-tag
+        with:
+          tag: "test-major-ci-${{ github.run_id }}.0.1"
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Verify major tag moved to new commit"
+        shell: bash
+        env:
+          MAJOR_TAG: ${{ steps.move-again.outputs.major-tag }}
+          NEW_TAG: "test-major-ci-${{ github.run_id }}.0.1"
+          OLD_TAG: "test-major-ci-${{ github.run_id }}.0.0"
+        run: |
+          set -euo pipefail
+          git fetch --tags
+          major_sha=$(git rev-list -n1 "$MAJOR_TAG")
+          new_sha=$(git rev-list -n1 "$NEW_TAG")
+          old_sha=$(git rev-list -n1 "$OLD_TAG")
+          if [[ "$major_sha" != "$new_sha" ]]; then
+            echo "FAIL: major tag should point to new tag commit"
+            exit 1
+          fi
+          if [[ "$major_sha" == "$old_sha" ]]; then
+            echo "FAIL: major tag still points to old commit — was not moved"
+            exit 1
+          fi
+          echo "OK: major tag successfully moved to new commit"
+
+      - name: "Cleanup test tags"
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MAJOR_TAG: ${{ steps.move.outputs.major-tag }}
+        run: |
+          set -euo pipefail
+          git push origin --delete "test-major-ci-${{ github.run_id }}.0.0" || true
+          git push origin --delete "test-major-ci-${{ github.run_id }}.0.1" || true
+          git push origin --delete "$MAJOR_TAG" || true

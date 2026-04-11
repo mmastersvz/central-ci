@@ -1,0 +1,51 @@
+name: "Move Major Tag"
+description: "Moves the floating major version tag (e.g. v1) to point at the given semver tag"
+
+inputs:
+  tag:
+    description: "The full semver tag to extract the major version from (e.g. v1.2.3 → moves v1)"
+    required: true
+  token:
+    description: "GitHub token with contents:write permission to force-push the tag"
+    required: true
+
+outputs:
+  major-tag:
+    description: "The major version tag that was moved (e.g. v1)"
+    value: ${{ steps.move.outputs.major_tag }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Move major tag"
+      id: move
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        TAG: ${{ inputs.tag }}
+      run: |
+        set -euo pipefail
+        major_tag="v$(echo "$TAG" | cut -d. -f1 | tr -d 'v')"
+
+        # Capture where the major tag currently points before moving it
+        previous_tag=$(git tag --points-at "refs/tags/${major_tag}" 2>/dev/null | sort -V | tail -1 || true)
+
+        git tag --force "$major_tag"
+        git push origin --force "refs/tags/${major_tag}"
+        echo "major_tag=${major_tag}" >> "$GITHUB_OUTPUT"
+
+        compare_row=""
+        if [[ -n "$previous_tag" && "$previous_tag" != "$TAG" ]]; then
+          compare_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/${previous_tag}...${TAG}"
+          compare_row="| **Changes** | [${previous_tag}...${TAG}](${compare_url}) |"
+        fi
+
+        {
+          echo "### Major Tag"
+          echo ""
+          echo "| | |"
+          echo "| --- | --- |"
+          echo "| **Pinned tag** | \`${TAG}\` |"
+          echo "| **Major tag** | [${major_tag}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${major_tag}) |"
+          [[ -n "$compare_row" ]] && echo "$compare_row"
+        } >> "$GITHUB_STEP_SUMMARY"

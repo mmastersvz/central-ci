@@ -50,12 +50,7 @@ jobs:
           previous-tag: ${{ steps.version.outputs.previous-tag }}
 
       - name: "Move major version tag"
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NEW_TAG: ${{ steps.version.outputs.new-tag }}
-        run: |
-          set -euo pipefail
-          major_tag="v$(echo "$NEW_TAG" | cut -d. -f1 | tr -d 'v')"
-          git tag --force "$major_tag"
-          git push origin --force "refs/tags/${major_tag}"
+        uses: ./actions/move-major-tag
+        with:
+          tag: ${{ steps.version.outputs.new-tag }}
+          token: ${{ secrets.GITHUB_TOKEN }}
