@@ -48,7 +48,21 @@ case $bump in
 esac
 
 new_tag="${PREFIX}${major}.${minor}.${patch}"
+marketing="${major}.${minor}.${patch}"
 
 echo "new_tag=${new_tag}"         >> "$GITHUB_OUTPUT"
 echo "previous_tag=${prev_tag}"   >> "$GITHUB_OUTPUT"
 echo "release_type=${bump}"       >> "$GITHUB_OUTPUT"
+echo "marketing_version=${marketing}" >> "$GITHUB_OUTPUT"
+
+{
+  echo "### Version"
+  echo ""
+  echo "| | |"
+  echo "| --- | --- |"
+  echo "| **New tag** | \`${new_tag}\` |"
+  echo "| **Marketing version** | \`${marketing}\` |"
+  echo "| **Previous tag** | \`${prev_tag:-none}\` |"
+  echo "| **Bump type** | ${bump} |"
+  echo "| **Build number** | ${GITHUB_RUN_NUMBER} |"
+} >> "$GITHUB_STEP_SUMMARY"

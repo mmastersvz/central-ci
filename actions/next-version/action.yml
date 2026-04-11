@@ -21,6 +21,9 @@ outputs:
   release-type:
     description: "The bump type applied: major, minor, or patch"
     value: ${{ steps.version.outputs.release_type }}
+  marketing-version:
+    description: "The marketing version (e.g. 1.2.3)"
+    value: ${{ steps.version.outputs.marketing_version }}
 
 runs:
   using: "composite"

@@ -92,6 +92,7 @@ Computes the next semver tag from [Conventional Commits](https://www.conventiona
 | `new-tag` | The next computed tag (e.g. `v1.2.3` or `my-service/v1.2.3`) |
 | `previous-tag` | The most recent matching tag, or empty string if none exists |
 | `release-type` | The bump type applied: `major`, `minor`, or `patch` |
+| `marketing-version` | The bare version number without prefix or `v` (e.g. `1.2.3`) |
 
 ## Testing
 
