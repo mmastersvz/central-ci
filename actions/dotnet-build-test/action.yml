@@ -17,6 +17,16 @@ inputs:
 runs:
   using: "composite"
   steps:
+
+    - name: Debug file structure
+      shell: bash
+      run: |
+        find src/ -name "*.csproj" -o -name "*.sln" | head -20
+        echo "=================-------------================="
+        pwd
+        echo "=================-------------================="
+        ls -la
+
     - name: Restore
       shell: bash
       working-directory: ${{ inputs.working-dir }}
