@@ -1,6 +1,47 @@
 # central-ci
 
-A library of reusable GitHub Actions composite actions and workflows.
+A library of reusable GitHub Actions composite actions and workflows designed for security, scalability, and developer experience.
+
+## Repository Standards
+
+To maintain a professional "Golden Path" experience and ensure this library scales,  following a strict organizational and naming conventions.
+
+### Workflow Naming
+
+All files in `.github/workflows/` are prefixed based on their scope to separate the **Library API** from **Internal Maintenance**:
+
+| Prefix | Category | Intent |
+| :--- | :--- | :--- |
+| `lib-` | **Library** | **Public API.** Reusable workflows intended to be called by external repositories. |
+| `test-` | **Validation** | **Internal Tests.** Workflows that exercise our composite actions to ensure stability before release. |
+| `local-` | **Maintenance** | **Internal Ops.** CI/CD for *this* repository (e.g., linting, tagging, and releasing `central-ci`). |
+<!-- TODO:
+ | `util-` | **Utility** | **Helpers.** Specialized workflows for background tasks like cache cleanup or dependency updates. | -->
+
+### TODO: Input & Output Conventions
+
+To provide a predictable developer experience (DevEx) across all actions and workflows:
+
+1. **Input Prefixing (`arg-`):** Inside complex YAML logic, inputs are often prefixed with `arg-` or `input-` to clearly distinguish them from system environment variables or secrets.
+2. **Standardized Outputs:** Actions follow a "Least Surprise" principle by using consistent output names across different tools (e.g., `new-tag`, `is-prerelease`, `marketing-version`).
+3. **The "Floating" Version Standard:**
+   * **`main`**: The development branch (unstable).
+   * **`vX` (e.g., `v1`)**: A floating major version tag that always points to the latest stable release.
+   * **`vX.Y.Z`**: Immutable SemVer releases for production pinning.
+
+### Directory Structure
+
+```text
+.github/
+└── workflows/
+    ├── local-[workflow-name].yml          # Local to this repo
+    ├── lib-[reusable-workflow-name].yml   # Reusable workflow for others
+    └── test-[test-action-name].yml        # Test composite action
+actions/
+└── [action-name]/             # Composite actions (e.g. resolve-version)
+    └── action.yml
+scripts/               # contains scripts with more complex logic (e.g. next-version.sh)
+```
 
 ## Versioning
 
