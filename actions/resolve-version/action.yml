@@ -38,7 +38,7 @@ runs:
     - name: "Compute release version"
       id: release
       if: github.event_name != 'pull_request' && inputs.pr-number == ''
-      uses: ./actions/next-version
+      uses: mmastersvz/central-ci/actions/next-version@main
       with:
         service: ${{ inputs.service }}
         token: ${{ inputs.token }}
@@ -46,6 +46,6 @@ runs:
     - name: "Compute PR version"
       id: pr
       if: github.event_name == 'pull_request' || inputs.pr-number != ''
-      uses: ./actions/pr-version
+      uses: mmastersvz/central-ci/actions/pr-version@main
       with:
         pr-number: ${{ inputs.pr-number }}
