@@ -9,16 +9,22 @@ inputs:
     description: "Path to the project folder"
     required: false
     default: "src/DotnetService"
+  working-directory:
+    description: "The working directory for the action"
+    required: false
+    # default: "./"
 
 runs:
   using: "composite"
   steps:
     - name: Restore
       shell: bash
+      working-directory: ${{ inputs.working-dir || inputs.project-path }}
       run: dotnet restore ${{ inputs.project-path }}
 
     - name: Build
       shell: bash
+      working-directory: ${{ inputs.working-dir || inputs.project-path }}
       run: |
         dotnet publish ${{ inputs.project-path }} \
           -c Release \
@@ -28,4 +34,5 @@ runs:
 
     - name: Test
       shell: bash
+      working-directory: ${{ inputs.working-dir || inputs.project-path }}
       run: dotnet test --no-build -c Release --verbosity normal
