@@ -18,15 +18,15 @@ runs:
   using: "composite"
   steps:
 
-    - name: Debug file structure
-      shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      run: |
-        pwd
-        echo "=================-------------================="
-        ls -la
-        echo "=================-------------================="
-        find . -name "*.csproj" -o -name "*.sln" | head -20
+    # - name: Debug file structure
+    #   shell: bash
+    #   working-directory: ${{ inputs.working-directory }}
+    #   run: |
+    #     pwd
+    #     echo "=================-------------================="
+    #     ls -la
+    #     echo "=================-------------================="
+    #     find . -name "*.csproj" -o -name "*.sln" | head -20
 
     - name: Restore
       shell: bash
@@ -45,5 +45,5 @@ runs:
 
     - name: Test
       shell: bash
-      working-directory: ${{ inputs.working-dir }}
+      working-directory: ${{ inputs.working-directory }}
       run: dotnet test --no-build -c Release --verbosity normal
