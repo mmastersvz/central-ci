@@ -14,7 +14,7 @@ inputs:
   context:
     description: "Docker build context"
     required: false
-    default: "./services/dotnet-service"
+    default: "."
   cache-scope:
     description: "Scope for the GHA cache"
     required: true
