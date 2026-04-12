@@ -1,6 +1,9 @@
 name: "Trivy Scan"
 description: "Scans the source code for vulnerabilities using Trivy"
 inputs:
+  app-name:
+    description: "The name of the application being scanned (for cache key purposes)"
+    required: true
   scan-ref:
     description: "The path to scan"
     required: false
@@ -9,24 +12,42 @@ inputs:
     description: "Vulnerability severities to include"
     required: false
     default: "CRITICAL,HIGH"
+  format:
+    description: "The output format for the scan results"
+    required: false
+    default: "sarif"
   output-file:
     description: "The name of the SARIF output file"
     required: false
-    default: "trivy-results.sarif"
+    default: "trivy-src-results.sarif"
 
 runs:
   using: "composite"
   steps:
+    - name: Setup Trivy values
+      shell: bash
+      id: setup
+      run: |
+        echo "SCAN_REF=${{ inputs.scan-ref }}" >> $GITHUB_ENV
+        echo "SEVERITY=${{ inputs.severity }}" >> $GITHUB_ENV
+        echo "FORMAT=${{ inputs.format }}" >> $GITHUB_ENV
+        echo "APP_NAME=${{ inputs.app-name }}" >> $GITHUB_ENV
+        echo "OUTPUT_FILE=trivy-src-results-${{ inputs.app-name }}.${{ inputs.format }}" >> $GITHUB_ENV
+
+    # - name: Setup Trivy Cache
+    #   uses: actions/cache@v3
+    #   with:
+
     - name: Trivy FS Scan (source)
       uses: aquasecurity/trivy-action@0.35.0
       with:
         scan-type: "fs"
-        scan-ref: ${{ inputs.scan-ref }}
-        format: "sarif"
-        output: ${{ inputs.output-file }}
-        severity: ${{ inputs.severity }}
+        scan-ref: ${{ steps.setup.outputs.SCAN_REF }}
+        format: ${{ steps.setup.outputs.FORMAT }}
+        output: ${{ steps.setup.outputs.OUTPUT_FILE }}
+        severity: ${{ steps.setup.outputs.SEVERITY }}
 
     - name: Upload Trivy SARIF
       uses: github/codeql-action/upload-sarif@v4
       with:
-        sarif_file: "trivy-results.sarif"
+        sarif_file: ${{ steps.setup.outputs.OUTPUT_FILE }}
