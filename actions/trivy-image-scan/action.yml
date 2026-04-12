@@ -7,10 +7,6 @@ inputs:
   image-ref:
     description: "The container image to scan"
     required: true
-  scan-ref:
-    description: "The path to scan"
-    required: false
-    default: "."
   severity:
     description: "Vulnerability severities to include"
     required: false
@@ -25,11 +21,11 @@ runs:
       run: |
         tmp="${{ inputs.image-ref }}"
         IMAGE_REF="${tmp%%,*}"
-        echo "IMAGE_REF=${IMAGE_REF}" >> $GITHUB_ENV
-        echo "SEVERITY=${{ inputs.severity }}" >> $GITHUB_ENV
-        echo "FORMAT=sarif" >> $GITHUB_ENV
-        echo "APP_NAME=${{ inputs.app-name }}" >> $GITHUB_ENV
-        echo "OUTPUT_FILE=trivy-image-results-${{ inputs.app-name }}.sarif" >> $GITHUB_ENV
+        echo "IMAGE_REF=${IMAGE_REF}" >> $GITHUB_OUTPUT
+        echo "SEVERITY=${{ inputs.severity }}" >> $GITHUB_OUTPUT
+        echo "FORMAT=sarif" >> $GITHUB_OUTPUT
+        echo "APP_NAME=${{ inputs.app-name }}" >> $GITHUB_OUTPUT
+        echo "OUTPUT_FILE=trivy-image-results-${{ inputs.app-name }}.sarif" >> $GITHUB_OUTPUT
 
     # - name: Setup Trivy Cache
     #   uses: actions/cache@v3
