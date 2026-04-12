@@ -21,11 +21,11 @@ runs:
     - name: Debug file structure
       shell: bash
       run: |
-        find src/ -name "*.csproj" -o -name "*.sln" | head -20
-        echo "=================-------------================="
         pwd
         echo "=================-------------================="
         ls -la
+        echo "=================-------------================="
+        find . -name "*.csproj" -o -name "*.sln" | head -20
 
     - name: Restore
       shell: bash
