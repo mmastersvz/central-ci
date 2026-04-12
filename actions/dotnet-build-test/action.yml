@@ -5,6 +5,10 @@ inputs:
   build-version:
     description: "The version to apply to the build"
     required: true
+  dotnet-version:
+    description: "The version of the .NET SDK to use"
+    required: false
+    default: "8.0.x"
   project-path:
     description: "Path to the project folder"
     required: false
@@ -26,6 +30,11 @@ runs:
     #     ls -la
     #     echo "=================-------------================="
     #     find . -name "*.csproj" -o -name "*.sln" | head -20
+
+    - name: "Setup: .NET"
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
 
     - name: Restore
       shell: bash
