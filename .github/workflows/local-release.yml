@@ -43,7 +43,7 @@ jobs:
         uses: ./actions/gh-release
         with:
           tag: ${{ steps.version.outputs.new-tag }}
-          title: ${{ steps.version.outputs.marketing-version }}
+          title: ${{ steps.version.outputs.build-version }}
           token: ${{ secrets.GITHUB_TOKEN }}
           notes: ${{ steps.changelog.outputs.notes }}
           release-type: ${{ steps.version.outputs.release-type }}

@@ -26,7 +26,7 @@ jobs:
         env:
           NEW_TAG: ${{ steps.version.outputs.new-tag }}
           RELEASE_TYPE: ${{ steps.version.outputs.release-type }}
-          MARKETING: ${{ steps.version.outputs.marketing-version }}
+          BUILD_VERSION: ${{ steps.version.outputs.build-version }}
         run: |
           set -euo pipefail
           if [[ ! "$NEW_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -37,11 +37,11 @@ jobs:
             echo "FAIL: release-type '$RELEASE_TYPE' is not major/minor/patch"
             exit 1
           fi
-          if [[ ! "$MARKETING" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "FAIL: marketing-version '$MARKETING' does not match X.Y.Z"
+          if [[ ! "$BUILD_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "FAIL: build-version '$BUILD_VERSION' does not match X.Y.Z"
             exit 1
           fi
-          echo "OK: new-tag=$NEW_TAG release-type=$RELEASE_TYPE marketing-version=$MARKETING"
+          echo "OK: new-tag=$NEW_TAG release-type=$RELEASE_TYPE build-version=$BUILD_VERSION"
 
   test-with-prefix:
     name: "Test prefixed tag (with service)"
@@ -63,7 +63,7 @@ jobs:
         env:
           NEW_TAG: ${{ steps.version.outputs.new-tag }}
           RELEASE_TYPE: ${{ steps.version.outputs.release-type }}
-          MARKETING: ${{ steps.version.outputs.marketing-version }}
+          BUILD_VERSION: ${{ steps.version.outputs.build-version }}
         run: |
           set -euo pipefail
           if [[ ! "$NEW_TAG" =~ ^my-service/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -74,8 +74,8 @@ jobs:
             echo "FAIL: release-type '$RELEASE_TYPE' is not major/minor/patch"
             exit 1
           fi
-          if [[ ! "$MARKETING" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "FAIL: marketing-version '$MARKETING' does not match X.Y.Z"
+          if [[ ! "$BUILD_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "FAIL: build-version '$BUILD_VERSION' does not match X.Y.Z"
             exit 1
           fi
-          echo "OK: new-tag=$NEW_TAG release-type=$RELEASE_TYPE marketing-version=$MARKETING"
+          echo "OK: new-tag=$NEW_TAG release-type=$RELEASE_TYPE build-version=$BUILD_VERSION"
