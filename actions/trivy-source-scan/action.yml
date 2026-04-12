@@ -16,10 +16,6 @@ inputs:
     description: "The output format for the scan results"
     required: false
     default: "sarif"
-  output-file:
-    description: "The name of the SARIF output file"
-    required: false
-    default: "trivy-src-results.sarif"
 
 runs:
   using: "composite"

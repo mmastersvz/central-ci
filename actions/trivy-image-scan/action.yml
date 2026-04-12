@@ -15,10 +15,6 @@ inputs:
     description: "Vulnerability severities to include"
     required: false
     default: "CRITICAL,HIGH"
-  output-file:
-    description: "The name of the SARIF output file"
-    required: false
-    default: "trivy-image-results.sarif"
 
 runs:
   using: "composite"
