@@ -1,0 +1,83 @@
+name: CI - Standardized Application
+
+on:
+  workflow_call:
+    inputs:
+      language:
+        description: 'Language or mode: go, node, python, docker, multi'
+        required: true
+        type: string
+      dockerfile:
+        description: 'Path to Dockerfile (for docker/multi)'
+        required: false
+        type: string
+        default: 'Dockerfile'
+      test-command:
+        description: 'Override test command (optional)'
+        required: false
+        type: string
+      coverage-path:
+        description: 'Path to coverage files for upload'
+        required: false
+        type: string
+        default: 'coverage.*'
+
+    secrets: {}  # TODO
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      packages: write   # for GHCR in build mode
+      pull-requests: write  # optional for comments
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Language-specific setup + caching
+      - name: Setup & Cache Dependencies
+        uses: ./.github/actions/setup-and-cache@main # TODO: pin to v1 or SHA
+        with:
+          language: ${{ inputs.language }}
+
+      # Secret scanning (early fail)
+      - name: Secret Detection (TruffleHog)
+        uses: trufflesecurity/trufflehog@v3.94.3
+        with:
+          path: ./
+          base: ${{ github.event.pull_request.base.sha || github.sha }}
+          head: HEAD
+          extra_args: --fail --results=verified,unknown
+
+      # Linting
+      - name: Lint Code
+        uses: ./.github/actions/lint@main # TODO: pin to v1 or SHA
+        with:
+          language: ${{ inputs.language }}
+
+      # Unit tests + coverage
+      - name: Run Tests & Generate Coverage
+        uses: ./.github/actions/test@main # TODO: pin to v1 or SHA
+        with:
+          language: ${{ inputs.language }}
+          test-command: ${{ inputs.test-command }}
+
+      - name: Upload Coverage Artifact
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-reports
+          path: ${{ inputs.coverage-path }}
+          retention-days: 7
+
+      # Build + Scan
+      - name: Build & Security Scan Container
+        if: contains(fromJSON('["docker","multi"]'), inputs.language)
+        uses: ./.github/actions/docker-build-and-scan@main # TODO: pin to v1 or SHA
+        with:
+          dockerfile: ${{ inputs.dockerfile }}
+          push: ${{ github.ref == 'refs/heads/main' }}

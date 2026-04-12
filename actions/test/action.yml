@@ -1,0 +1,23 @@
+name: 'Run Tests'
+description: 'Runs tests for various languages'
+
+inputs:
+  language:
+    required: true
+    description: "The primary language of the repository (e.g. 'go', 'node', 'python', or 'multi' for mixed/other). Determines which test command to run."
+  test-command:
+    required: false
+    description: "Override test command (optional). If not provided, defaults to 'go test ./... -coverprofile=coverage.out' for Go and 'npm test' for Node. Python and other languages will require a custom command."
+
+runs:
+  using: composite
+  steps:
+    - if: inputs.language == 'go'
+      run: go test ./... -coverprofile=coverage.out
+      shell: bash
+
+    - if: inputs.language == 'node'
+      run: ${{ inputs.test-command || 'npm test' }}
+      shell: bash
+
+    # TODO: add language-specific test commands for at least Java and Python
