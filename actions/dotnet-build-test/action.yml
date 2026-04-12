@@ -20,6 +20,7 @@ runs:
 
     - name: Debug file structure
       shell: bash
+      working-directory: ${{ inputs.working-dir }}
       run: |
         pwd
         echo "=================-------------================="
