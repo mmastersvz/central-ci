@@ -48,3 +48,29 @@ runs:
         cache-to: type=gha,mode=max,scope=${{ inputs.cache-scope }}
         sbom: true
         provenance: mode=max
+
+    - name: Docker Summary
+      shell: bash
+      if: ${{ inputs.docker-push == 'true' }}
+      run: |
+        # Variables for readability
+        OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+        REPO_LC=$(echo "${{ inputs.container-name }}" | tr '[:upper:]' '[:lower:]')
+        TAG="${{ inputs.docker-tags }}"
+        DIGEST="${{ steps.build.outputs.digest }}"
+
+        # GHCR Package URL structure
+        PACKAGE_URL="https://github.com/users/$OWNER_LC/packages/container/package/$REPO_LC"
+
+        {
+          echo "## Publish Summary"
+          echo "|  |  |"
+          echo "| --- | --- |"
+          echo "| Container | [$REPO_LC:$TAG]($PACKAGE_URL) |"
+          echo ""
+          echo "### Pull Command"
+          echo '```bash'
+          echo "docker pull ghcr.io/$OWNER_LC/$REPO_LC:$TAG"
+          echo '```'
+          echo "Digest: \`$DIGEST\`"
+        } >> $GITHUB_STEP_SUMMARY
