@@ -23,7 +23,9 @@ runs:
       shell: bash
       id: setup
       run: |
-        echo "IMAGE_REF=${{ inputs.image-ref }}" >> $GITHUB_ENV
+        tmp="${{ inputs.image-ref }}"
+        IMAGE_REF="${tmp%%,*}"
+        echo "IMAGE_REF=${IMAGE_REF}" >> $GITHUB_ENV
         echo "SEVERITY=${{ inputs.severity }}" >> $GITHUB_ENV
         echo "FORMAT=sarif" >> $GITHUB_ENV
         echo "APP_NAME=${{ inputs.app-name }}" >> $GITHUB_ENV
