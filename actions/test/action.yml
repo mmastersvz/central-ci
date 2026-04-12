@@ -1,5 +1,5 @@
-name: 'Run Tests'
-description: 'Runs tests for various languages'
+name: "Run Tests"
+description: "Runs tests for various languages"
 
 inputs:
   language:

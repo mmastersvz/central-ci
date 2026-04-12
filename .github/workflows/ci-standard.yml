@@ -4,25 +4,25 @@ on:
   workflow_call:
     inputs:
       language:
-        description: 'Language or mode: go, node, python, docker, multi'
+        description: "Language or mode: go, node, python, docker, multi"
         required: true
         type: string
       dockerfile:
-        description: 'Path to Dockerfile (for docker/multi)'
+        description: "Path to Dockerfile (for docker/multi)"
         required: false
         type: string
-        default: 'Dockerfile'
+        default: "Dockerfile"
       test-command:
-        description: 'Override test command (optional)'
+        description: "Override test command (optional)"
         required: false
         type: string
       coverage-path:
-        description: 'Path to coverage files for upload'
+        description: "Path to coverage files for upload"
         required: false
         type: string
-        default: 'coverage.*'
+        default: "coverage.*"
 
-    secrets: {}  # TODO
+    secrets: {} # TODO
 
 jobs:
   ci:
@@ -30,8 +30,8 @@ jobs:
     permissions:
       contents: read
       security-events: write
-      packages: write   # for GHCR in build mode
-      pull-requests: write  # optional for comments
+      packages: write # for GHCR in build mode
+      pull-requests: write # optional for comments
 
     steps:
       - uses: actions/checkout@v4

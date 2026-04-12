@@ -1,5 +1,5 @@
-name: 'Docker Build, Multi-arch, SBOM, Trivy Scan'
-description: 'Builds a Docker image for multiple architectures, generates an SBOM, and performs a Trivy vulnerability scan. Optionally pushes to GHCR.'
+name: "Docker Build, Multi-arch, SBOM, Trivy Scan"
+description: "Builds a Docker image for multiple architectures, generates an SBOM, and performs a Trivy vulnerability scan. Optionally pushes to GHCR."
 
 inputs:
   dockerfile:
@@ -7,7 +7,7 @@ inputs:
     description: "Path to the Dockerfile to build (e.g. './Dockerfile')"
   push:
     required: false
-    default: 'false'
+    default: "false"
     description: "Whether to push the built image to GHCR (default: false). Requires GHCR permissions."
 
 runs:
@@ -37,13 +37,13 @@ runs:
     - name: Trivy FS Scan (source)
       uses: aquasecurity/trivy-action@0.35.0
       with:
-        scan-type: 'fs'
-        scan-ref: '.'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-        severity: 'CRITICAL,HIGH'
+        scan-type: "fs"
+        scan-ref: "."
+        format: "sarif"
+        output: "trivy-results.sarif"
+        severity: "CRITICAL,HIGH"
 
     - name: Upload Trivy SARIF
       uses: github/codeql-action/upload-sarif@v3
       with:
-        sarif_file: 'trivy-results.sarif'
+        sarif_file: "trivy-results.sarif"

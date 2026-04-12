@@ -1,5 +1,5 @@
-name: 'Lint Code'
-description: 'Lints code for various languages'
+name: "Lint Code"
+description: "Lints code for various languages"
 
 inputs:
   language:

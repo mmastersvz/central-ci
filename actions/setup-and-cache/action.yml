@@ -1,5 +1,5 @@
-name: 'Setup & Cache (Go/Node/Python/Docker)'
-description: 'Language-aware setup with built-in caching'
+name: "Setup & Cache (Go/Node/Python/Docker)"
+description: "Language-aware setup with built-in caching"
 
 inputs:
   language:
@@ -7,7 +7,7 @@ inputs:
     description: "The primary language of the repository (e.g. 'go', 'node', 'python', 'docker', or 'multi' for mixed/other). Determines which setup and caching strategy to use."
   platforms:
     required: false
-    default: 'linux/amd64,linux/arm64'
+    default: "linux/amd64,linux/arm64"
     description: "Target platforms for Docker builds (default: 'linux/amd64,linux/arm64'). Only applicable if language is 'docker' or 'multi'."
 
 runs:
@@ -16,20 +16,20 @@ runs:
     - if: inputs.language == 'go'
       uses: actions/setup-go@v6
       with:
-        go-version-file: 'go.mod'
+        go-version-file: "go.mod"
         cache: true
 
     - if: inputs.language == 'node'
       uses: actions/setup-node@v6
       with:
-        node-version-file: '.nvmrc'
-        cache: 'npm'
+        node-version-file: ".nvmrc"
+        cache: "npm"
 
     - if: inputs.language == 'python'
       uses: actions/setup-python@v6
       with:
-        python-version-file: '.python-version'
-        cache: 'pip'
+        python-version-file: ".python-version"
+        cache: "pip"
 
     - if: contains(fromJSON('["docker","multi"]'), inputs.language)
       uses: docker/setup-buildx-action@v4
