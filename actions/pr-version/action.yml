@@ -11,7 +11,7 @@ outputs:
   new-tag:
     description: "Pre-release version string (e.g. 0.0.0-pr.123.5.1). Matches the new-tag contract from next-version."
     value: ${{ steps.pr-version.outputs.version }}
-  marketing-version:
+  build-version:
     description: "Same as new-tag for PR builds (no clean semver exists). Matches next-version contract."
     value: ${{ steps.pr-version.outputs.version }}
   previous-tag:

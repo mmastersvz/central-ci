@@ -23,7 +23,7 @@ All files in `.github/workflows/` are prefixed based on their scope to separate 
 To provide a predictable developer experience (DevEx) across all actions and workflows:
 
 1. **Input Prefixing (`arg-`):** Inside complex YAML logic, inputs are often prefixed with `arg-` or `input-` to clearly distinguish them from system environment variables or secrets.
-2. **Standardized Outputs:** Actions follow a "Least Surprise" principle by using consistent output names across different tools (e.g., `new-tag`, `is-prerelease`, `marketing-version`).
+2. **Standardized Outputs:** Actions follow a "Least Surprise" principle by using consistent output names across different tools (e.g., `new-tag`, `is-prerelease`, `build-version`).
 3. **The "Floating" Version Standard:**
    * **`main`**: The development branch (unstable).
    * **`vX` (e.g., `v1`)**: A floating major version tag that always points to the latest stable release.
@@ -138,7 +138,7 @@ Auto-selects `next-version` for release builds or `pr-version` for pull request 
 | Name                | Release example | PR example         |
 | ------------------- | --------------- | ------------------ |
 | `new-tag`           | `v1.2.3`        | `0.0.0-pr.123.5.1` |
-| `marketing-version` | `1.2.3`         | `0.0.0-pr.123.5.1` |
+| `build-version` | `1.2.3`         | `0.0.0-pr.123.5.1` |
 | `previous-tag`      | `v1.2.2`        | `""`               |
 | `release-type`      | `minor`         | `prerelease`       |
 | `is-prerelease`     | `false`         | `true`             |
@@ -206,7 +206,7 @@ Creates a GitHub release for an existing git tag.
 - uses: mmastersvz/central-ci/actions/gh-release@v1
   with:
     tag: ${{ steps.version.outputs.new-tag }}
-    title: ${{ steps.version.outputs.marketing-version }}
+    title: ${{ steps.version.outputs.build-version }}
     token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
@@ -266,7 +266,7 @@ Computes the next semver tag from [Conventional Commits](https://www.conventiona
 | `new-tag`           | The next computed tag (e.g. `v1.2.3` or `my-service/v1.2.3`) |
 | `previous-tag`      | The most recent matching tag, or empty string if none exists |
 | `release-type`      | The bump type applied: `major`, `minor`, or `patch`          |
-| `marketing-version` | The bare version number without prefix or `v` (e.g. `1.2.3`) |
+| `build-version` | The bare version number without prefix or `v` (e.g. `1.2.3`) |
 
 ### `pr-version`
 
@@ -299,7 +299,7 @@ Computes a pre-release version string for pull request builds. Outputs a SemVer-
 | Name                | Description                                          |
 | ------------------- | ---------------------------------------------------- |
 | `new-tag`           | Pre-release version string (e.g. `0.0.0-pr.123.5.1`) |
-| `marketing-version` | Same as `new-tag` for PR builds                      |
+| `build-version` | Same as `new-tag` for PR builds                      |
 | `previous-tag`      | Always empty for PR builds                           |
 | `release-type`      | Always `prerelease`                                  |
 | `build-id`          | Dot-separated build identifier (e.g. `123.5.1`)      |

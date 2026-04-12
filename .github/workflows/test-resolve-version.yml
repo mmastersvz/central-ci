@@ -26,7 +26,7 @@ jobs:
         shell: bash
         env:
           NEW_TAG: ${{ steps.version.outputs.new-tag }}
-          MARKETING: ${{ steps.version.outputs.marketing-version }}
+          BUILD_VERSION: ${{ steps.version.outputs.build-version }}
           RELEASE_TYPE: ${{ steps.version.outputs.release-type }}
           IS_PRERELEASE: ${{ steps.version.outputs.is-prerelease }}
         run: |
@@ -35,8 +35,8 @@ jobs:
             echo "FAIL: new-tag '$NEW_TAG' is not a semver tag"
             exit 1
           fi
-          if [[ ! "$MARKETING" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "FAIL: marketing-version '$MARKETING' does not match X.Y.Z"
+          if [[ ! "$BUILD_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "FAIL: build-version '$BUILD_VERSION' does not match X.Y.Z"
             exit 1
           fi
           if [[ ! "$RELEASE_TYPE" =~ ^(major|minor|patch)$ ]]; then
@@ -47,7 +47,7 @@ jobs:
             echo "FAIL: is-prerelease should be 'false' for release builds, got '$IS_PRERELEASE'"
             exit 1
           fi
-          echo "OK: new-tag=$NEW_TAG marketing=$MARKETING release-type=$RELEASE_TYPE is-prerelease=$IS_PRERELEASE"
+          echo "OK: new-tag=$NEW_TAG build_version=$BUILD_VERSION release-type=$RELEASE_TYPE is-prerelease=$IS_PRERELEASE"
 
   test-pr-path:
     name: "Test PR path (pull_request event)"
@@ -65,7 +65,7 @@ jobs:
         shell: bash
         env:
           NEW_TAG: ${{ steps.version.outputs.new-tag }}
-          MARKETING: ${{ steps.version.outputs.marketing-version }}
+          BUILD_VERSION: ${{ steps.version.outputs.build-version }}
           RELEASE_TYPE: ${{ steps.version.outputs.release-type }}
           IS_PRERELEASE: ${{ steps.version.outputs.is-prerelease }}
           PREVIOUS_TAG: ${{ steps.version.outputs.previous-tag }}
