@@ -1,0 +1,32 @@
+name: "Trivy Scan"
+description: "Scans the source code for vulnerabilities using Trivy"
+inputs:
+  scan-ref:
+    description: "The path to scan"
+    required: false
+    default: "."
+  severity:
+    description: "Vulnerability severities to include"
+    required: false
+    default: "CRITICAL,HIGH"
+  output-file:
+    description: "The name of the SARIF output file"
+    required: false
+    default: "trivy-results.sarif"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Trivy FS Scan (source)
+      uses: aquasecurity/trivy-action@0.35.0
+      with:
+        scan-type: "fs"
+        scan-ref: ${{ inputs.scan-ref }}
+        format: "sarif"
+        output: ${{ inputs.output-file }}
+        severity: ${{ inputs.severity }}
+
+    - name: Upload Trivy SARIF
+      uses: github/codeql-action/upload-sarif@v4
+      with:
+        sarif_file: "trivy-results.sarif"

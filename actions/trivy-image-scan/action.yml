@@ -1,0 +1,35 @@
+name: "Trivy Scan"
+description: "Scans the source code for vulnerabilities using Trivy"
+inputs:
+  image-ref:
+    description: "The container image to scan"
+    required: true
+  scan-ref:
+    description: "The path to scan"
+    required: false
+    default: "."
+  severity:
+    description: "Vulnerability severities to include"
+    required: false
+    default: "CRITICAL,HIGH"
+  output-file:
+    description: "The name of the SARIF output file"
+    required: false
+    default: "trivy-image-results.sarif"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Trivy Image Scan
+      uses: aquasecurity/trivy-action@0.35.0
+      with:
+        scan-type: "image"
+        image-ref: ${{ inputs.image-ref }} # docker image to scan
+        format: "sarif"
+        output: ${{ inputs.output-file }}
+        severity: ${{ inputs.severity }}
+
+    - name: Upload Trivy SARIF
+      uses: github/codeql-action/upload-sarif@v4
+      with:
+        sarif_file: ${{ inputs.output-file }}
