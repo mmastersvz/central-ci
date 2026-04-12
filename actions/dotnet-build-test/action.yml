@@ -1,0 +1,31 @@
+name: "Dotnet Build and Test"
+description: "Restores, builds, and tests a .NET project"
+
+inputs:
+  build-version:
+    description: "The version to apply to the build"
+    required: true
+  project-path:
+    description: "Path to the project folder"
+    required: false
+    default: "src/DotnetService"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Restore
+      shell: bash
+      run: dotnet restore ${{ inputs.project-path }}
+
+    - name: Build
+      shell: bash
+      run: |
+        dotnet publish ${{ inputs.project-path }} \
+          -c Release \
+          -o ./publish \
+          --no-self-contained \
+          /p:Version=${{ inputs.build-version }}
+
+    - name: Test
+      shell: bash
+      run: dotnet test --no-build -c Release --verbosity normal
