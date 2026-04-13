@@ -1,0 +1,45 @@
+name: 'Setup Docker Metadata'
+description: 'Determines docker push logic and generates formatted image tags'
+inputs:
+  app-name:
+    description: 'Name of the application'
+    required: true
+  app-version:
+    description: 'The resolved semantic version for the build'
+    required: true
+
+outputs:
+  docker-push:
+    description: "Boolean string indicating if the image should be pushed"
+    value: ${{ steps.logic.outputs.docker-push }}
+  docker-tags:
+    description: "Comma-separated list of docker tags"
+    value: ${{ steps.logic.outputs.docker-tags }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Generate Docker Metadata"
+      id: logic
+      shell: bash
+      run: |
+        # Determine Push Logic
+        if [[ "${{ github.event_name }}" == 'pull_request' ]]; then
+          echo "docker-push=false" >> $GITHUB_OUTPUT
+        else
+          echo "docker-push=true" >> $GITHUB_OUTPUT
+        fi
+
+        # Construct Docker Tags
+        REPO_BASE="ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ inputs.app-name }}"
+        SHA_TAG="${REPO_BASE}:${{ github.sha }}"
+
+        if [[ "${{ github.event_name }}" == 'pull_request' ]]; then
+          echo "Generating PR tags..."
+          docker_tags="${SHA_TAG},${REPO_BASE}:pr-${{ github.event.pull_request.number }}"
+        else
+          echo "Generating Release tags..."
+          docker_tags="${SHA_TAG},${REPO_BASE}:${{ inputs.app-version }},${REPO_BASE}:latest"
+        fi
+
+        echo "docker-tags=${docker_tags}" >> $GITHUB_OUTPUT
