@@ -1,0 +1,187 @@
+# mmastersvz/central-ci/.github/workflows/cleanup-pr-images.yml
+name: Cleanup PR container images
+
+on:
+  workflow_call:
+    inputs:
+      package-names:
+        description: >
+          Comma-separated list of GHCR package names to clean up.
+          For org-scoped packages use the full path e.g. polyglot-apps/go-service
+        required: true
+        type: string
+      owner:
+        description: >
+          GitHub org or user that owns the packages.
+          Defaults to the calling repo's owner.
+        required: false
+        type: string
+        default: ${{ github.repository_owner }}
+      owner-type:
+        description: org or user
+        required: false
+        type: string
+        default: org
+      tag-pattern:
+        description: >
+          Substring that must appear in a version's tags for it to be deleted.
+          Defaults to pr-{PR number}.
+        required: false
+        type: string
+        default: ''
+    secrets:
+      token:
+        description: Token with packages:write scope. Pass secrets.GITHUB_TOKEN from the caller.
+        required: true
+
+permissions:
+  packages: write
+  contents: read
+
+jobs:
+  cleanup:
+    name: Delete PR images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete matching package versions
+        env:
+          GH_TOKEN: ${{ secrets.token }}
+          OWNER: ${{ inputs.owner }}
+          OWNER_TYPE: ${{ inputs.owner-type }}
+          PACKAGE_NAMES: ${{ inputs.package-names }}
+          TAG_PATTERN: ${{ inputs.tag-pattern }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          # Resolve tag pattern
+          if [[ -z "$TAG_PATTERN" ]]; then
+            if [[ -z "$PR_NUMBER" ]]; then
+              echo "::error::Cannot determine PR number and no tag-pattern provided."
+              exit 1
+            fi
+            TAG_PATTERN="pr-${PR_NUMBER}"
+          fi
+          echo "Using tag pattern: ${TAG_PATTERN}"
+
+          # Build base API path depending on owner type
+          if [[ "$OWNER_TYPE" == "org" ]]; then
+            API_BASE="orgs/${OWNER}/packages/container"
+          else
+            API_BASE="users/${OWNER}/packages/container"
+          fi
+
+          # Split comma-separated package names into an array
+          IFS=',' read -ra PACKAGES <<< "$PACKAGE_NAMES"
+
+          # Tracking counters for summary
+          TOTAL_DELETED=0
+          TOTAL_FAILED=0
+
+          # Start job summary
+          {
+            echo "## Container image cleanup"
+            echo ""
+            echo "**PR:** #${PR_NUMBER}  |  **Tag pattern:** \`${TAG_PATTERN}\`"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          for RAW_NAME in "${PACKAGES[@]}"; do
+            PACKAGE="${RAW_NAME// /}"
+            ENCODED_PACKAGE="${PACKAGE//\//%2F}"
+
+            echo "--- Processing package: ${PACKAGE}"
+
+            # Per-package counters and row accumulator
+            PKG_DELETED=0
+            PKG_FAILED=0
+            TABLE_ROWS=""
+
+            PAGE=1
+
+            while true; do
+              RESPONSE=$(gh api \
+                --method GET \
+                "${API_BASE}/${ENCODED_PACKAGE}/versions" \
+                --field per_page=100 \
+                --field page="${PAGE}" \
+                2>&1) || {
+                echo "::warning::Could not list versions for ${PACKAGE}: ${RESPONSE}"
+                {
+                  echo "### \`${PACKAGE}\`"
+                  echo ""
+                  echo "> [!WARNING]"
+                  echo "> Could not list versions: ${RESPONSE}"
+                  echo ""
+                } >> "$GITHUB_STEP_SUMMARY"
+                break
+              }
+
+              MATCHED_IDS=$(echo "$RESPONSE" | \
+                jq -r --arg pattern "$TAG_PATTERN" \
+                '.[] | select(.metadata.container.tags[] | contains($pattern)) | .id')
+
+              if [[ -z "$MATCHED_IDS" ]]; then
+                break
+              fi
+
+              while IFS= read -r VERSION_ID; do
+                TAGS=$(echo "$RESPONSE" | \
+                  jq -r --argjson id "$VERSION_ID" \
+                  '.[] | select(.id == $id) | .metadata.container.tags | join(", ")')
+
+                CREATED_AT=$(echo "$RESPONSE" | \
+                  jq -r --argjson id "$VERSION_ID" \
+                  '.[] | select(.id == $id) | .created_at')
+
+                echo "Deleting version ${VERSION_ID} (tags: ${TAGS})"
+
+                if gh api \
+                  --method DELETE \
+                  "${API_BASE}/${ENCODED_PACKAGE}/versions/${VERSION_ID}" 2>/dev/null; then
+                  TABLE_ROWS+="| \`${TAGS}\` | \`${VERSION_ID}\` | ${CREATED_AT} | ✅ Deleted |"$'\n'
+                  PKG_DELETED=$((PKG_DELETED + 1))
+                else
+                  echo "::warning::Failed to delete version ${VERSION_ID}"
+                  TABLE_ROWS+="| \`${TAGS}\` | \`${VERSION_ID}\` | ${CREATED_AT} | ❌ Failed |"$'\n'
+                  PKG_FAILED=$((PKG_FAILED + 1))
+                fi
+
+              done <<< "$MATCHED_IDS"
+
+              PAGE=$((PAGE + 1))
+            done
+
+            TOTAL_DELETED=$((TOTAL_DELETED + PKG_DELETED))
+            TOTAL_FAILED=$((TOTAL_FAILED + PKG_FAILED))
+
+            echo "Deleted ${PKG_DELETED} version(s) for ${PACKAGE}."
+
+            # Write per-package section to summary
+            {
+              echo "### \`${PACKAGE}\`"
+              echo ""
+              if [[ -n "$TABLE_ROWS" ]]; then
+                echo "| Tags | Version ID | Created | Status |"
+                echo "|------|------------|---------|--------|"
+                echo "$TABLE_ROWS"
+              else
+                echo "_No matching versions found._"
+                echo ""
+              fi
+            } >> "$GITHUB_STEP_SUMMARY"
+
+          done
+
+          # Write totals footer to summary
+          {
+            echo "---"
+            echo ""
+            if [[ $TOTAL_FAILED -gt 0 ]]; then
+              echo "> [!WARNING]"
+              echo "> **${TOTAL_DELETED}** version(s) deleted — **${TOTAL_FAILED}** failed to delete."
+            else
+              echo "> [!NOTE]"
+              echo "> **${TOTAL_DELETED}** version(s) deleted across all packages."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
