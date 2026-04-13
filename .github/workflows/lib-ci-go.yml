@@ -22,6 +22,11 @@ on:
         description: "The resolved build version"
         value: ${{ jobs.setup.outputs.build-version }}
 
+permissions:
+  contents: read
+  packages: read          # Needed for pulling images from GHCR
+  security-events: write  # If you upload SARIF results (Trivy, etc.)
+
 jobs:
 
   init-security-scans:
