@@ -115,6 +115,7 @@ jobs:
   #   steps:
 
       - name: "Security: Trivy (container image)"
+        if: ${{ needs.setup.outputs.docker-push == 'true' }}
         uses: mmastersvz/central-ci/actions/trivy-image-scan@main
         with:
           app-name: ${{ inputs.app-name }}
