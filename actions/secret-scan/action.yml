@@ -5,11 +5,14 @@ inputs:
   base:
     description: "The base commit to scan from"
     required: false
-    default: ""
   head:
     description: "The head commit to scan to"
     required: false
     default: "HEAD"
+  path:
+    description: "The path to scan"
+    required: false
+    default: "./"
   extra_args:
     description: "Additional arguments for TruffleHog"
     required: false
@@ -22,6 +25,7 @@ runs:
       uses: trufflesecurity/trufflehog@v3.94.3
       with:
         # If base is empty, we fall back to the SHA logic
+        path: ${{ inputs.path }}
         base: ${{ inputs.base || github.event.pull_request.base.sha || github.sha }}
         head: ${{ inputs.head }}
         extra_args: ${{ inputs.extra_args }}
