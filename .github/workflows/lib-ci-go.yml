@@ -1,4 +1,4 @@
-name: "Reusable Go CI"
+name: "CI: Go (reusable)"
 
 on:
   workflow_call:
