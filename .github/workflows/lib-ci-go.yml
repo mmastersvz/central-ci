@@ -64,7 +64,7 @@ jobs:
           # Parse tool version
           tool_version=$(grep "^${LANG_NAME} " "${{ inputs.tool-versions-path }}" | awk '{print $2}')
           if [ -z "$tool_version" ]; then
-            echo "::error::Tool '${LANG_NAME}' not found in ${{ inputs.tool-versions-path }}"
+            echo "::errlatestor::Tool '${LANG_NAME}' not found in ${{ inputs.tool-versions-path }}"
             exit 1
           fi
           echo "go-version=${tool_version}" >> $GITHUB_OUTPUT
@@ -77,9 +77,9 @@ jobs:
           app-version: ${{ steps.setup-app.outputs.version }}
 
       - name: "Lint: golang"
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         with:
-          version: v1.60 # Recommend upgrading from v2.3/v9
+          version: latest # v1.60 # Recommend upgrading from v2.3/v9
           working-directory: ${{ inputs.app-dir }}
 
   build:
