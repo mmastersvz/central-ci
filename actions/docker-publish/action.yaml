@@ -74,7 +74,7 @@ runs:
           echo ""
           echo "### Pull Command"
           echo '```bash'
-          echo "docker pull ghcr.io/${OWNER_LC}/${REPO_LC}:${TAG}"
+          echo "docker pull ghcr.io/${OWNER_LC}/${REPO_LC}/${APP_NAME}:${TAG}"
           echo '```'
           echo "Digest: \`${DIGEST}\`"
         } >> $GITHUB_STEP_SUMMARY
