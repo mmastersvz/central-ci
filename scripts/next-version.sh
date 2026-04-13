@@ -1,22 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Usage: next-version.sh [service]
-#   service  Optional. When provided, tags are prefixed as "<service>/vX.Y.Z".
-#            When omitted, tags are plain "vX.Y.Z".
-
 SERVICE="${1:-}"
+PREFIX="${SERVICE:+$SERVICE/v}"
+PREFIX="${PREFIX:-v}"
 
-if [[ -n "$SERVICE" ]]; then
-  PREFIX="${SERVICE}/v"
-else
-  PREFIX="v"
-fi
+git fetch --tags --force
 
-git fetch --tags
-
-# Find the latest semver tag matching our prefix
-prev_tag=$(git tag -l "${PREFIX}*" | sort -V | tail -1)
+prev_tag=$(git tag -l "${PREFIX}*" | sort -V | tail -1 || echo "")
 
 if [[ -z "$prev_tag" ]]; then
   major=0; minor=0; patch=0
@@ -27,11 +18,10 @@ else
   patch=$(echo "$ver" | cut -d. -f3)
 fi
 
-# Collect commit subjects since last tag (or all commits if no prior tag)
 if [[ -z "$prev_tag" ]]; then
-  commits=$(git log --pretty=format:"%s" HEAD)
+  commits=$(git log --pretty=format:"%s" "${GITHUB_SHA}")
 else
-  commits=$(git log --pretty=format:"%s" "${prev_tag}..HEAD")
+  commits=$(git log --pretty=format:"%s" "${prev_tag}..${GITHUB_SHA}")
 fi
 
 bump=patch
@@ -50,19 +40,18 @@ esac
 new_tag="${PREFIX}${major}.${minor}.${patch}"
 build_version="${major}.${minor}.${patch}"
 
-echo "new_tag=${new_tag}"         >> "$GITHUB_OUTPUT"
-echo "previous_tag=${prev_tag}"   >> "$GITHUB_OUTPUT"
-echo "release_type=${bump}"       >> "$GITHUB_OUTPUT"
+echo "new_tag=${new_tag}"             >> "$GITHUB_OUTPUT"
+echo "previous_tag=${prev_tag}"       >> "$GITHUB_OUTPUT"
+echo "release_type=${bump}"           >> "$GITHUB_OUTPUT"
 echo "build_version=${build_version}" >> "$GITHUB_OUTPUT"
 
 {
-  echo "### Version"
+  echo "### Versioning Summary"
   echo ""
-  echo "| | |"
-  echo "| --- | --- |"
-  echo "| **New tag** | \`${new_tag}\` |"
-  echo "| **Marketing version** | \`${build_version}\` |"
-  echo "| **Previous tag** | \`${prev_tag:-none}\` |"
-  echo "| **Bump type** | ${bump} |"
-  echo "| **Build number** | ${GITHUB_RUN_NUMBER} |"
+  echo "| Attribute | Value |"
+  echo "| :--- | :--- |"
+  echo "| **Action** | Bump ${bump^^} |"
+  echo "| **New Tag** | \`${new_tag}\` |"
+  echo "| **App Version** | \`${build_version}\` |"
+  echo "| **Previous Tag** | \`${prev_tag:-none}\` |"
 } >> "$GITHUB_STEP_SUMMARY"
