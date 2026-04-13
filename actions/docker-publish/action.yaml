@@ -56,7 +56,8 @@ runs:
         # Variables for readability
         OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
         REPO_LC=$(echo "${{ inputs.container-name }}" | tr '[:upper:]' '[:lower:]')
-        TAG="${{ inputs.docker-tags }}"
+        # get tag with #'s not latest or hash
+        TAG="$(echo ${{ inputs.docker-tags }} | tr ',' '\n' | grep -E ':[0-9]+\.[0-9]+\.[0-9]+' | head -n1)"
         DIGEST="${{ steps.build.outputs.digest }}"
 
         # GHCR Package URL structure
