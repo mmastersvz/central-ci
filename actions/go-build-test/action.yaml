@@ -1,0 +1,44 @@
+name: "Go Build and Test"
+description: "Sets up Go, runs tests with coverage, and builds the application"
+
+inputs:
+  app-dir:
+    description: "The directory where go.mod is located"
+    required: true
+    default: "."
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: ${{ inputs.app-dir }}/go.mod
+        cache-dependency-path: ${{ inputs.app-dir }}/go.sum
+
+    - name: Download modules
+      shell: bash
+      run: go mod download
+      working-directory: ${{ inputs.app-dir }}
+
+    - name: Vet
+      shell: bash
+      run: go vet ./...
+      working-directory: ${{ inputs.app-dir }}
+
+    - name: Test
+      shell: bash
+      run: go test -v -race -coverprofile=coverage.out ./...
+      working-directory: ${{ inputs.app-dir }}
+
+    - name: Upload coverage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: go-coverage
+        path: ${{ inputs.app-dir }}/coverage.out
+        retention-days: 7
+
+    - name: Build
+      shell: bash
+      run: go build -o app -v ./...
+      working-directory: ${{ inputs.app-dir }}
