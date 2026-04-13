@@ -1,13 +1,13 @@
-name: 'Security Scans'
-description: 'Runs secret scanning and Trivy source scans'
+name: "Security Scans"
+description: "Runs secret scanning and Trivy source scans"
 inputs:
   app-name:
-    description: 'Name of the application'
+    description: "Name of the application"
     required: true
   app-dir:
-    description: 'Directory to scan'
+    description: "Directory to scan"
     required: false
-    default: '.'
+    default: "."
   base:
     description: "The base commit to scan from"
     required: false

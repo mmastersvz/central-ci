@@ -1,13 +1,13 @@
-name: 'Setup: Version and (TODO: vars)'
-description: 'Captures the current commit SHA and resolves the service version'
+name: "Setup: Version and (TODO: vars)"
+description: "Captures the current commit SHA and resolves the service version"
 
 inputs:
   service-name:
-    description: 'The name of the service'
+    description: "The name of the service"
     required: false
-    default: 'go-service'
+    default: "go-service"
   github-token:
-    description: 'GitHub token for version resolution'
+    description: "GitHub token for version resolution"
     required: true
 
 outputs:

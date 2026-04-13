@@ -15,7 +15,7 @@ on:
       tool-versions-path:
         required: false
         type: string
-        default: ./.tool-versions
+        default: "./.tool-versions"
     secrets:
       github-token:
         required: true
@@ -25,7 +25,6 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-
   init-security-scans:
     name: "Initial security scans"
     runs-on: ubuntu-latest
@@ -34,16 +33,16 @@ jobs:
         uses: mmastersvz/central-ci/actions/security-init-scans@main
         with:
           app-name: ${{ inputs.app-name }}
-          app-dir:  ${{ inputs.app-dir }}
+          app-dir: ${{ inputs.app-dir }}
 
   setup:
     name: "Setup"
     runs-on: ubuntu-latest
     outputs:
       build-version: ${{ steps.prep.outputs.build-version }}
-      docker-push:   ${{ steps.setup-docker.outputs.docker-push }}
+      docker-push: ${{ steps.setup-docker.outputs.docker-push }}
       dotnet-version: ${{ steps.setup-app.outputs.dotnet-version }}
-      docker-tags:   ${{ steps.setup-docker.outputs.docker-tags }}
+      docker-tags: ${{ steps.setup-docker.outputs.docker-tags }}
 
     steps:
       - uses: actions/checkout@v4
@@ -72,7 +71,7 @@ jobs:
         id: setup-docker
         uses: mmastersvz/central-ci/actions/setup-docker@main
         with:
-          app-name:    ${{ inputs.app-name }}
+          app-name: ${{ inputs.app-name }}
           app-version: ${{ steps.prep.outputs.build-version }}
 
       - name: "Setup: .NET"
@@ -87,7 +86,7 @@ jobs:
         uses: mmastersvz/central-ci/actions/trivy-source-scan@main
         with:
           app-name: ${{ inputs.app-name }}
-          scan-ref:  ${{ inputs.app-dir }}
+          scan-ref: ${{ inputs.app-dir }}
 
   build:
     name: "Build & Test"
@@ -111,23 +110,23 @@ jobs:
       - name: "Build: .NET and Test"
         uses: mmastersvz/central-ci/actions/dotnet-build-test@main
         with:
-          build-version:     ${{ needs.setup.outputs.build-version }}
-          dotnet-version:    ${{ needs.setup.outputs.dotnet-version }}
-          project-path:      ${{ inputs.project-path }}
+          build-version: ${{ needs.setup.outputs.build-version }}
+          dotnet-version: ${{ needs.setup.outputs.dotnet-version }}
+          project-path: ${{ inputs.project-path }}
           working-directory: ${{ inputs.app-dir }}
 
       - name: "Docker: Build and Publish Image"
         uses: mmastersvz/central-ci/actions/docker-publish@main
         with:
           registry-password: ${{ secrets.github-token }}
-          docker-push:  ${{ needs.setup.outputs.docker-push }}
-          docker-tags:  ${{ needs.setup.outputs.docker-tags }}
-          context:      ./${{ inputs.app-dir }}
-          cache-scope:  ${{ inputs.app-name }}
+          docker-push: ${{ needs.setup.outputs.docker-push }}
+          docker-tags: ${{ needs.setup.outputs.docker-tags }}
+          context: ./${{ inputs.app-dir }}
+          cache-scope: ${{ inputs.app-name }}
 
       - name: "Security: Trivy (container image)"
         if: ${{ needs.setup.outputs.docker-push == 'true' }}
         uses: mmastersvz/central-ci/actions/trivy-image-scan@main
         with:
-          app-name:  ${{ inputs.app-name }}
+          app-name: ${{ inputs.app-name }}
           image-ref: ${{ needs.setup.outputs.docker-tags }}

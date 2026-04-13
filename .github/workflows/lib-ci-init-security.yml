@@ -4,13 +4,13 @@ on:
   workflow_call:
     inputs:
       app-name:
-        description: 'The name of the application'
+        description: "The name of the application"
         required: true
         type: string
       app-dir:
-        description: 'The directory to scan'
+        description: "The directory to scan"
         required: false
-        default: '.'
+        default: "."
         type: string
 
 jobs:

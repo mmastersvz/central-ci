@@ -1,11 +1,11 @@
-name: 'Setup Docker Metadata'
-description: 'Determines docker push logic and generates formatted image tags'
+name: "Setup Docker Metadata"
+description: "Determines docker push logic and generates formatted image tags"
 inputs:
   app-name:
-    description: 'Name of the application'
+    description: "Name of the application"
     required: true
   app-version:
-    description: 'The resolved semantic version for the build'
+    description: "The resolved semantic version for the build"
     required: true
 
 outputs:
