@@ -22,8 +22,7 @@ inputs:
   extra_args:
     description: "Additional arguments for TruffleHog"
     required: false
-    default: "--since-commit ${{ github.event.before }} --only-verified"
-    # default: "--results=verified,unknown"
+    default: "--results=verified,unknown"
 
 runs:
   using: "composite"
