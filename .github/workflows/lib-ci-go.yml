@@ -103,6 +103,12 @@ jobs:
           context: ${{ inputs.app-dir }}
           cache-scope: ${{ inputs.app-name }}
 
+  # post-security-scans:
+  #   name: "Post security scans"
+  #   runs-on: ubuntu-latest
+  #   needs: [setup, build]
+  #   steps:
+
       - name: "Security: Trivy (container image)"
         uses: mmastersvz/central-ci/actions/trivy-image-scan@main
         with:
