@@ -1,0 +1,30 @@
+name: "Lint Code"
+description: "Lints code for various languages"
+
+inputs:
+  language:
+    required: true
+    description: "The primary language of the repository (e.g. 'go', 'node', 'python', or 'multi' for mixed/other). Determines which linter to run."
+
+runs:
+  using: composite
+  steps:
+    - if: inputs.language == 'go'
+      uses: golangci/golangci-lint-action@v9
+      with:
+        version: v2.3
+
+    - if: inputs.language == 'node'
+      run: npm ci && npm run lint
+      shell: bash
+
+    - if: inputs.language == 'python'
+      run: pip install ruff && ruff check .
+      shell: bash
+
+    # Fallback: Super-Linter for mixed/other
+    - if: inputs.language == 'multi'
+      uses: super-linter/super-linter@v8
+      env:
+        DEFAULT_BRANCH: main
+        GITHUB_TOKEN: ${{ github.token }}
