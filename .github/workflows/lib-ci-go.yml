@@ -79,7 +79,7 @@ jobs:
         uses: mmastersvz/central-ci/actions/setup-docker@main
         with:
           app-name: ${{ inputs.app-name }}
-          app-version: ${{ steps.setup-app.outputs.version }}
+          app-version: ${{ steps.prep.outputs.build-version }}
 
       - name: "Lint: golang"
         uses: golangci/golangci-lint-action@v9
