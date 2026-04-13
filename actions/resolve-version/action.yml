@@ -49,3 +49,16 @@ runs:
       uses: mmastersvz/central-ci/actions/pr-version@main
       with:
         pr-number: ${{ inputs.pr-number }}
+
+    - name: "Debug Versions"
+      shell: bash
+      run: |
+        echo "Release version output:"
+        echo "  new-tag: ${{ steps.release.outputs.new-tag }}"
+        echo "  build-version: ${{ steps.release.outputs.build-version }}"
+        echo "  previous-tag: ${{ steps.release.outputs.previous-tag }}"
+        echo "  release-type: ${{ steps.release.outputs.release-type }}"
+        echo "PR version output:"
+        echo "  new-tag: ${{ steps.pr.outputs.new-tag }}"
+        echo "  build-version: ${{ steps.pr.outputs.build-version }}"
+        echo "  release-type: ${{ steps.pr.outputs.release-type }}"
