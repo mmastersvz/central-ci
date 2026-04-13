@@ -1,0 +1,39 @@
+name: 'Setup: Version and (TODO: vars)'
+description: 'Captures the current commit SHA and resolves the service version'
+
+inputs:
+  service-name:
+    description: 'The name of the service'
+    required: false
+    default: 'go-service'
+  github-token:
+    description: 'GitHub token for version resolution'
+    required: true
+
+outputs:
+  commit_sha:
+    description: "The full git commit SHA"
+    value: ${{ steps.sha.outputs.commit_sha }}
+  version:
+    description: "The resolved version from central-ci"
+    value: ${{ steps.version.outputs.version }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Checkout"
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Capture commit SHA
+      id: sha
+      shell: bash
+      run: echo "commit_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+    - name: "Version"
+      id: version
+      uses: mmastersvz/central-ci/actions/resolve-version@main
+      with:
+        service: ${{ inputs.service-name }}
+        token: ${{ inputs.github-token }}
