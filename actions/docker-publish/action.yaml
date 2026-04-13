@@ -55,23 +55,26 @@ runs:
       run: |
         # Variables for readability
         OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-        REPO_LC=$(echo "${{ inputs.container-name }}" | tr '[:upper:]' '[:lower:]')
+        # REPO_LC=$(echo "${{ inputs.container-name }}" | tr '[:upper:]' '[:lower:]')
+        REPO_LC=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
         # get tag with #'s not latest or hash
         TAG="$(echo ${{ inputs.docker-tags }} | tr ',' '\n' | grep -E ':[0-9]+\.[0-9]+\.[0-9]+' | head -n1)"
+        APP_NAME=$(basename "${TAG%%:*}")
         DIGEST="${{ steps.build.outputs.digest }}"
 
         # GHCR Package URL structure
-        PACKAGE_URL="https://github.com/users/$OWNER_LC/packages/container/package/$REPO_LC"
+        # PACKAGE_URL="https://github.com/users/$OWNER_LC/packages/container/package/$REPO_LC"
+        PACKAGE_URL="https://github.com/${OWNER_LC}/${REPO_LC}/pkgs/container/${REPO_LC}%2F${APP_NAME}"
 
         {
           echo "## Publish Summary"
           echo "|  |  |"
           echo "| --- | --- |"
-          echo "| Container | [$REPO_LC:$TAG]($PACKAGE_URL) |"
+          echo "| Container | [${REPO_LC}:${TAG}](${PACKAGE_URL}) |"
           echo ""
           echo "### Pull Command"
           echo '```bash'
-          echo "docker pull ghcr.io/$OWNER_LC/$REPO_LC:$TAG"
+          echo "docker pull ghcr.io/${OWNER_LC}/${REPO_LC}:${TAG}"
           echo '```'
-          echo "Digest: \`$DIGEST\`"
+          echo "Digest: \`${DIGEST}\`"
         } >> $GITHUB_STEP_SUMMARY
