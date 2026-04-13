@@ -71,7 +71,7 @@ jobs:
 
       - name: "Setup: Docker Metadata"
         id: setup-docker
-        uses: ./.github/actions/setup-docker
+        uses: mmastersvz/central-ci/actions/setup-docker@main
         with:
           app-name: ${{ inputs.app-name }}
           app-version: ${{ steps.setup-app.outputs.version }}
