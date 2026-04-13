@@ -17,6 +17,21 @@ outputs:
   version:
     description: "The resolved version from central-ci"
     value: ${{ steps.version.outputs.version }}
+  new-tag:
+    description: "Computed version tag: semver for releases (e.g. v1.2.3), pre-release for PRs (e.g. 0.0.0-pr.123.5.1)"
+    value: ${{ steps.version.outputs.new-tag }}
+  build-version:
+    description: "Bare version without prefix or v (e.g. 1.2.3 or 0.0.0-pr.123.5.1)"
+    value: ${{ steps.version.outputs.build-version }}
+  previous-tag:
+    description: "Previous release tag. Empty for PR builds."
+    value: ${{ steps.version.outputs.previous-tag }}
+  release-type:
+    description: "Bump type: major, minor, patch, or prerelease"
+    value: ${{ steps.version.outputs.release-type}}
+  is-prerelease:
+    description: "'true' for PR builds, 'false' for release builds"
+    value: ${{ steps.version.outcome == 'success' }}
 
 runs:
   using: "composite"
