@@ -9,6 +9,10 @@ on:
       app-dir:
         required: true
         type: string
+      language:
+        required: false
+        default: "dotnet"
+        type: string
       project-path:
         required: true
         type: string
