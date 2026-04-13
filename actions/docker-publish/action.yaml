@@ -41,6 +41,7 @@ runs:
       with:
         builder: ${{ steps.buildx.outputs.name }}
         context: ${{ inputs.context }}
+        load: true
         push: ${{ inputs.docker-push }}
         tags: ${{ inputs.docker-tags }}
         platforms: linux/amd64,linux/arm64
