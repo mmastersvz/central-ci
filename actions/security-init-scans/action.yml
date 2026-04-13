@@ -1,0 +1,27 @@
+name: 'Security Scans'
+description: 'Runs secret scanning and Trivy source scans'
+inputs:
+  app-name:
+    description: 'Name of the application'
+    required: true
+  app-dir:
+    description: 'Directory to scan'
+    required: false
+    default: '.'
+
+runs:
+  using: "composite"
+  steps:
+    - name: "Checkout"
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Scan for Secrets
+      uses: mmastersvz/central-ci/actions/secret-scan@main
+
+    - name: "Security Scan: Trivy (source code)"
+      uses: mmastersvz/central-ci/actions/trivy-source-scan@main
+      with:
+        app-name: ${{ inputs.app-name }}
+        scan-ref: ${{ inputs.app-dir }}
