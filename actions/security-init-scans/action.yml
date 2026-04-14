@@ -49,7 +49,8 @@ runs:
       uses: trufflesecurity/trufflehog@v3.94.3
       with:
         path: ${{ inputs.path || github.workspace }}
-        base: HEAD~1
+        base: ""
+        # base: HEAD~1
         head: HEAD
         extra_args: --results=verified,unknown
         # extra_args: ${{ inputs.extra_args }}
