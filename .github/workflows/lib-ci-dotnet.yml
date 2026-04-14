@@ -39,8 +39,8 @@ jobs:
         with:
           github-token: ${{ secrets.github-token }}
 
-  sast:
-    name: "SAST Scanning"
+  sast-pre:
+    name: "SAST Scanning - Pre build"
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -148,6 +148,7 @@ jobs:
 
   sast-post:
     name: "SAST Scanning - Post build"
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       security-events: write
