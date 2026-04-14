@@ -1,0 +1,137 @@
+name: "DAST Scan (ZAP Baseline)"
+description: >
+  Starts the provided Docker image locally, runs an OWASP ZAP baseline
+  (passive) scan against it, then tears the container down. Designed to
+  slot in after docker-publish in any build job.
+
+inputs:
+  image-ref:
+    description: >
+      Full image reference to run (e.g. ghcr.io/org/app:sha-abc123).
+      When docker-publish builds multi-tag images, pass the first tag.
+    required: true
+
+  port:
+    description: "Port the container listens on"
+    required: false
+    default: "8080"
+
+  target:
+    description: >
+      URL ZAP will scan. Defaults to http://localhost:<port>.
+      Override when the app serves on a sub-path (e.g. http://localhost:8080/api).
+    required: false
+    default: ""
+
+  load-local:
+    description: >
+      Build and load the image into the local Docker daemon before running.
+      Set to true whenever docker-push is false — the image won't be in the
+      registry and docker run would have nothing to pull.
+      Needs build-context and cache-scope when enabled.
+    required: false
+    default: "false"
+
+  build-context:
+    description: "Docker build context path (relative to repo root). Used when load-local is true."
+    required: false
+    default: "."
+
+  cache-scope:
+    description: "GHA cache scope used by docker-publish. Used when load-local is true."
+    required: false
+    default: ""
+
+  rules-file:
+    description: >
+      Path (relative to repo root) to a ZAP rules file (.tsv) for
+      suppressing known false positives or adjusting alert levels.
+    required: false
+    default: ""
+
+  cmd-options:
+    description: "Additional ZAP command-line options (passed through to zaproxy/action-baseline)"
+    required: false
+    default: "-I"
+
+  fail-on-warn:
+    description: "Fail the step if ZAP reports any WARN-level alerts (default: false)"
+    required: false
+    default: "false"
+
+  github-token:
+    description: "GitHub token — required for ZAP to post a summary comment on PRs"
+    required: true
+
+  startup-wait-seconds:
+    description: "How long to wait (seconds) for the container to become ready before scanning"
+    required: false
+    default: "15"
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: "ZAP: Set up Docker Buildx"
+      if: ${{ inputs.load-local == 'true' }}
+      uses: docker/setup-buildx-action@v4
+
+    - name: "ZAP: Load image locally (PR path)"
+      if: ${{ inputs.load-local == 'true' }}
+      uses: docker/build-push-action@v7
+      with:
+        context: ${{ inputs.build-context }}
+        push: false
+        load: true
+        tags: ${{ inputs.image-ref }}
+        platforms: linux/amd64
+        cache-from: type=gha,scope=${{ inputs.cache-scope }}
+
+    - name: "ZAP: Start target container"
+      shell: bash
+      run: |
+        set -euo pipefail
+        IMAGE="${{ inputs.image-ref }}"
+        IMAGE="${IMAGE%%,*}"
+        docker run -d \
+          --name zap-target \
+          --network host \
+          "${IMAGE}"
+
+    - name: "ZAP: Wait for container to be ready"
+      shell: bash
+      run: |
+        set -euo pipefail
+        TARGET="${{ inputs.target }}"
+        if [ -z "${TARGET}" ]; then
+          TARGET="http://localhost:${{ inputs.port }}"
+        fi
+        echo "ZAP_TARGET_URL=${TARGET}" >> "$GITHUB_ENV"
+
+        echo "Waiting up to ${{ inputs.startup-wait-seconds }}s for ${TARGET} ..."
+        deadline=$(( $(date +%s) + ${{ inputs.startup-wait-seconds }} ))
+        until curl -sf --max-time 2 "${TARGET}" > /dev/null 2>&1; do
+          if [ "$(date +%s)" -ge "${deadline}" ]; then
+            echo "::error::Container did not become ready in ${{ inputs.startup-wait-seconds }}s"
+            docker logs zap-target || true
+            exit 1
+          fi
+          sleep 2
+        done
+        echo "Container is ready at ${TARGET}"
+
+    - name: "ZAP: Baseline scan"
+      uses: zaproxy/action-baseline@v0.14.0
+      with:
+        target: ${{ env.ZAP_TARGET_URL }}
+        token: ${{ inputs.github-token }}
+        rules_file_name: ${{ inputs.rules-file }}
+        cmd_options: ${{ inputs.cmd-options }}
+        fail_action: ${{ inputs.fail-on-warn }}
+
+    - name: "ZAP: Stop target container"
+      if: always()
+      shell: bash
+      run: |
+        docker stop zap-target 2>/dev/null || true
+        docker rm   zap-target 2>/dev/null || true

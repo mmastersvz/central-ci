@@ -10,6 +10,16 @@ on:
         required: false
         type: string
         default: "."
+      dast-on-pr:
+        description: "Run ZAP baseline DAST scan on pull requests"
+        required: false
+        type: boolean
+        default: true
+      dast-on-push:
+        description: "Run ZAP baseline DAST scan on push to main"
+        required: false
+        type: boolean
+        default: true
       language:
         required: false
         default: "dotnet"
@@ -148,6 +158,20 @@ jobs:
           docker-tags: ${{ needs.setup.outputs.docker-tags }}
           context: ./${{ inputs.app-dir }}
           cache-scope: ${{ inputs.app-name }}
+
+      - name: "Security: ZAP Baseline (DAST)"
+        if: >-
+          ${{
+            (github.event_name == 'pull_request' && inputs.dast-on-pr) ||
+            (github.event_name != 'pull_request' && inputs.dast-on-push)
+          }}
+        uses: mmastersvz/central-ci/actions/security-dast-zap@main
+        with:
+          image-ref: ${{ needs.setup.outputs.docker-tags }}
+          load-local: ${{ needs.setup.outputs.docker-push != 'true' }}
+          build-context: ./${{ inputs.app-dir }}
+          cache-scope: ${{ inputs.app-name }}
+          github-token: ${{ secrets.github-token }}
 
       - name: "Security: Trivy (container image)"
         if: ${{ needs.setup.outputs.docker-push == 'true' }}
