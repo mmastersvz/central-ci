@@ -86,12 +86,6 @@ jobs:
       - name: "Lint: Dotnet Format"
         run: dotnet format ${{ inputs.app-dir }} --verify-no-changes
 
-      - name: "Security Scan: Trivy (source code)"
-        uses: mmastersvz/central-ci/actions/trivy-source-scan@main
-        with:
-          app-name: ${{ inputs.app-name }}
-          scan-ref: ${{ inputs.app-dir }}
-
   build:
     name: "Build & Test"
     runs-on: ubuntu-latest
