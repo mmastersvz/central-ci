@@ -120,6 +120,20 @@ jobs:
           app-version: ${{ steps.prep.outputs.build-version }}
 
       # TODO: Java linting (SpotBugs, Checkstyle, etc.) - can be added as a separate action or integrated into the build step depending on preference
+
+      - name: "Setup: JDK"
+        uses: actions/setup-java@v4
+        with:
+          distribution: '${{ steps.tools.outputs.java-distribution }}'
+          java-version: '${{ steps.tools.outputs.java-version }}'
+          cache: maven
+
+      - name: "Lint: Java Checkstyle"
+        run: mvn checkstyle:check
+
+      - name: "Lint: Java PMD"
+        run: mvn pmd:check
+
       # - name: "Lint: java"
       #   uses:
 
