@@ -1,0 +1,36 @@
+name: Secrets Scan
+description: Scans git history for leaked secrets using Gitleaks and TruffleHog
+
+inputs:
+  github-token:
+    description: GitHub token for Gitleaks authentication
+    required: true
+  default-branch:
+    description: Default branch to use as TruffleHog scan base
+    required: false
+    default: main
+  trufflehog-extra-args:
+    description: Extra arguments to pass to TruffleHog
+    required: false
+    default: --only-verified
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: "Security: Secrets | Gitleaks – scan history"
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+
+    - name: "Security: Secrets | TruffleHog – entropy scan"
+      uses: trufflesecurity/trufflehog@v3.94.3
+      with:
+        # If base is empty, we fall back to the SHA logic
+        path: ${{ inputs.path }}
+        # base: ${{ inputs.base || github.event.pull_request.base.sha || github.sha }}
+        # head: ${{ inputs.head }}
+        extra_args: ${{ inputs.extra_args }}
