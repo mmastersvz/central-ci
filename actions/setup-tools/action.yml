@@ -1,0 +1,62 @@
+name: "Setup Tools from .tool-versions"
+description: "Reads java, maven, etc. from .tool-versions and outputs versions as JSON"
+
+inputs:
+  tools:
+    description: 'Comma-separated list of tools (e.g. "java,maven,gradle")'
+    required: false
+    default: ""
+  language:
+    description: "Fallback language if tools input is empty"
+    required: false
+    default: "java"
+  tool-versions-path:
+    description: "Path to .tool-versions file"
+    required: false
+    default: ".tool-versions"
+
+outputs:
+  tool-versions: # ← Single output containing all dynamic versions as JSON
+    description: 'JSON object with all tool versions (e.g. {"java": "21", "maven": "3.9.6"})'
+    value: ${{ steps.extract.outputs.versions }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Extract tool versions
+      id: extract
+      shell: bash
+      run: |
+        # Parse comma-separated tools or fallback
+        if [[ -n "${{ inputs.tools }}" ]]; then
+          IFS=',' read -ra TOOLS <<< "${{ inputs.tools }}"
+        else
+          TOOLS=("${{ inputs.language }}")
+        fi
+
+        echo "Extracting versions for: ${TOOLS[*]}"
+
+        declare -A versions
+
+        for TOOL in "${TOOLS[@]}"; do
+          TOOL=$(echo "$TOOL" | xargs)
+
+          tool_version=$(grep -E "^${TOOL}[[:space:]]+" "${{ inputs.tool-versions-path }}" | awk '{print $2}' | head -n1)
+
+          if [ -z "$tool_version" ]; then
+            echo "::error::Tool '${TOOL}' not found in ${{ inputs.tool-versions-path }}"
+            exit 1
+          fi
+
+          versions["$TOOL"]="$tool_version"
+          echo "✓ ${TOOL} = ${tool_version}"
+        done
+
+        # Convert associative array to JSON and set as output
+        json=$(printf '%s\n' "${!versions[@]}" | jq -R -s -c '
+          split("\n")[:-1] as $keys |
+          $keys | map(. as $k | {($k): $ENV[$k]}) | add
+        ' --argjson env "$(declare -p versions | sed 's/declare -A versions=//')")
+
+        echo "versions=${json}" >> $GITHUB_OUTPUT
+        echo "Final versions JSON: ${json}"

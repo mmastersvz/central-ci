@@ -47,7 +47,7 @@ jobs:
     name: "Setup"
     runs-on: ubuntu-latest
     outputs:
-      build-version: ${{ steps.prep.outputs.version }}
+      build-version: ${{ steps.prep.outputs.build-version }}
       docker-push: ${{ steps.setup-docker.outputs.docker-push }}
       # tools-versions: ${{ steps.tools.outputs.tool-versions }}
       java-distribution: ${{ steps.tools.outputs.java-distribution }}
@@ -111,7 +111,6 @@ jobs:
 
           # Debug output
           cat $GITHUB_OUTPUT
-
 
       - name: "Setup: Docker Metadata"
         id: setup-docker
