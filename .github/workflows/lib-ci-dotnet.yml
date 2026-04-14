@@ -40,6 +40,21 @@ jobs:
         with:
           github-token: ${{ secrets.github-token }}
 
+  sast:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: mmastersvz/central-ci/actions/security-sast-scans@main
+        with:
+          # semgrep-app-token: ${{ secrets.SEMGREP_APP_TOKEN }}
+          codeql-languages: csharp
+          codeql-build-mode: autobuild
+          # codeql-config-file: .github/codeql/csharp-config.yml
+          codeql-category-suffix: dotnet
+          working-directory: ${{ inputs.app-dir }}
+
   setup:
     name: "Setup"
     runs-on: ubuntu-latest
