@@ -17,10 +17,15 @@ on:
         required: false
         default: "./.tool-versions"
         type: string
-    outputs:
-      build-version:
-        description: "The resolved build version"
-        value: ${{ jobs.setup.outputs.build-version }}
+
+    secrets:
+      github-token:
+        required: true
+
+    # outputs:
+    #   build-version:
+    #     description: "The resolved build version"
+    #     value: ${{ jobs.setup.outputs.build-version }}
 
 permissions:
   contents: read
