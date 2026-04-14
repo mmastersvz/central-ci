@@ -69,7 +69,7 @@ jobs:
         run: |
           # Resolve Language Name
           LANG_NAME="${{ inputs.language }}"
-          [[ "$LANG_NAME" == "node" ]] && LANG_NAME="node"
+          [[ "$LANG_NAME" == "node" ]] && LANG_NAME="nodejs"
 
           # Parse tool version
           tool_version=$(grep "^${LANG_NAME} " "${{ inputs.tool-versions-path }}" | awk '{print $2}')
