@@ -127,6 +127,10 @@ jobs:
     name: "Build & Test"
     runs-on: ubuntu-latest
     needs: setup
+    defaults:
+      run:
+        working-directory: ${{ inputs.app-dir }}
+
     steps:
       - uses: actions/checkout@v4
 
