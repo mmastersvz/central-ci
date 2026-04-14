@@ -36,6 +36,13 @@ inputs:
     required: false
     default: ""
 
+  codeql-upload-results:
+    description: >
+      Whether to upload SARIF results to GitHub Code Scanning.
+      Set to 'false' on private repos where Code Scanning is not yet enabled.
+    required: false
+    default: "false" # TODO "true"
+
   do-checkout:
     description: "Whether to perform a git checkout (default: true)"
     required: false
@@ -80,3 +87,4 @@ runs:
           codeql${{ inputs.codeql-category-suffix != ''
             && format('-{0}', inputs.codeql-category-suffix)
             || '' }}
+        upload: ${{ inputs.codeql-upload-results }}
