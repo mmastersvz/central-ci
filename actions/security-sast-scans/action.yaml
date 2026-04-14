@@ -1,0 +1,124 @@
+name: "SAST Scan (Semgrep + CodeQL)"
+description: >
+  Runs Semgrep (via official Docker image) and CodeQL static analysis.
+  Designed for multi-language repos and monorepos.
+
+inputs:
+  semgrep-app-token:
+    description: >
+      Semgrep AppSec Platform token. If provided, uses platform rules + advanced features.
+      If omitted, runs in pure OSS mode with the rulesets defined in `semgrep-config`.
+    required: false
+
+  semgrep-config:
+    description: >
+      Space-separated Semgrep rulesets/configs to use in OSS mode (no token).
+      Ignored when `semgrep-app-token` is supplied.
+    required: false
+    default: "p/default p/owasp-top-ten p/cwe-top-25 p/secrets"
+
+  codeql-languages:
+    description: >
+      Comma-separated list of CodeQL languages.
+      Example: javascript,python,java,go,typescript
+    required: true
+
+  codeql-config-file:
+    description: >
+      Path (relative to repo root) to a custom CodeQL config file.
+      Recommended for monorepos — use `paths` / `paths-ignore` inside it.
+    required: false
+    default: ""
+
+  codeql-build-mode:
+    description: >
+      CodeQL build mode: 'none' (interpreted languages), 'autobuild', or leave default.
+      Use 'none' for JS/TS/Python/Ruby/etc.
+    required: false
+    default: "none"
+
+  codeql-category-suffix:
+    description: >
+      Optional suffix for the CodeQL category (helps distinguish scans in monorepos,
+      e.g. "frontend", "backend", "services").
+    required: false
+    default: ""
+
+  do-checkout:
+    description: "Whether to perform a git checkout (default: true)"
+    required: false
+    default: "true"
+
+  working-directory:
+    description: >
+      Working directory for Semgrep scan (relative to repo root).
+      For CodeQL monorepo scoping, prefer `codeql-config-file` with paths.
+    required: false
+    default: "."
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Checkout repository
+      if: ${{ inputs.do-checkout != 'false' }} # Allow skipping checkout for Docker build contexts, etc.
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Important for diff-aware Semgrep scans on PRs
+
+    # ====================== Semgrep ======================
+    - name: Semgrep – Platform scan (with token)
+      if: ${{ inputs.semgrep-app-token != '' }}
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        docker run --rm \
+          -v "$GITHUB_WORKSPACE:/src" \
+          -w "/src/${{ inputs.working-directory }}" \
+          -e SEMGREP_APP_TOKEN \
+          semgrep/semgrep:latest \
+          semgrep ci --sarif --output /src/semgrep-results.sarif
+      env:
+        SEMGREP_APP_TOKEN: ${{ inputs.semgrep-app-token }}
+
+    - name: Semgrep – OSS scan (no token)
+      if: ${{ inputs.semgrep-app-token == '' }}
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        docker run --rm \
+          -v "$GITHUB_WORKSPACE:/src" \
+          -w "/src/${{ inputs.working-directory }}" \
+          semgrep/semgrep:latest \
+          semgrep scan --config "${{ inputs.semgrep-config }}" \
+            --sarif --output /src/semgrep-results.sarif \
+            ${{ github.event_name == 'pull_request' && '--baseline-ref ${{ github.event.pull_request.base.sha }}' || '' }}
+
+    - name: Upload Semgrep SARIF
+      if: always()
+      uses: github/codeql-action/upload-sarif@v4
+      with:
+        sarif_file: semgrep-results.sarif
+        category: semgrep${{ inputs.codeql-category-suffix != '' && format('-{0}', inputs.codeql-category-suffix) || '' }}
+        checkout_path: ${{ github.workspace }}
+
+    # ====================== CodeQL ======================
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v4
+      with:
+        languages: ${{ inputs.codeql-languages }}
+        build-mode: ${{ inputs.codeql-build-mode }}
+        config-file: ${{ inputs.codeql-config-file }}
+        # category is set at analyze step for better monorepo support
+
+    - name: Autobuild (compiled languages)
+      if: ${{ inputs.codeql-build-mode == 'autobuild' }}
+      uses: github/codeql-action/autobuild@v4
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v4
+      with:
+        category: >-
+          codeql${{ inputs.codeql-category-suffix != ''
+            && format('-{0}', inputs.codeql-category-suffix)
+            || '' }}
