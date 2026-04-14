@@ -1,0 +1,82 @@
+name: "SAST Scan (Semgrep + CodeQL)"
+description: >
+  Runs Semgrep (via official Docker image) and CodeQL static analysis.
+  Designed for multi-language repos and monorepos.
+
+inputs:
+  skip-codeql:
+    description: "Whether to skip the CodeQL scan (default: false)"
+    required: false
+    default: "false"
+
+  codeql-languages:
+    description: >
+      Comma-separated list of CodeQL languages.
+      Example: javascript,python,java,go,typescript
+    required: true
+
+  codeql-config-file:
+    description: >
+      Path (relative to repo root) to a custom CodeQL config file.
+      Recommended for monorepos — use `paths` / `paths-ignore` inside it.
+    required: false
+    default: ""
+
+  codeql-build-mode:
+    description: >
+      CodeQL build mode: 'none' (interpreted languages), 'autobuild', or leave default.
+      Use 'none' for JS/TS/Python/Ruby/etc.
+    required: false
+    default: "none"
+
+  codeql-category-suffix:
+    description: >
+      Optional suffix for the CodeQL category (helps distinguish scans in monorepos,
+      e.g. "frontend", "backend", "services").
+    required: false
+    default: ""
+
+  do-checkout:
+    description: "Whether to perform a git checkout (default: true)"
+    required: false
+    default: "true"
+
+  working-directory:
+    description: >
+      Working directory for Semgrep scan (relative to repo root).
+      For CodeQL monorepo scoping, prefer `codeql-config-file` with paths.
+    required: false
+    default: "."
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Checkout repository
+      if: ${{ inputs.do-checkout != 'false' }} # Allow skipping checkout for Docker build contexts, etc.
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Important for diff-aware Semgrep scans on PRs
+
+    # ====================== CodeQL ======================
+    - name: Initialize CodeQL
+      if: ${{ inputs.skip-codeql != 'true' }}
+      uses: github/codeql-action/init@v4
+      with:
+        languages: ${{ inputs.codeql-languages }}
+        build-mode: ${{ inputs.codeql-build-mode }}
+        config-file: ${{ inputs.codeql-config-file }}
+        # category is set at analyze step for better monorepo support
+
+    - name: Autobuild (compiled languages)
+      if: ${{ inputs.skip-codeql != 'true' && inputs.codeql-build-mode == 'autobuild' }}
+      uses: github/codeql-action/autobuild@v4
+
+    - name: Perform CodeQL Analysis
+      if: ${{ inputs.skip-codeql != 'true' }}
+      uses: github/codeql-action/analyze@v4
+      with:
+        category: >-
+          codeql${{ inputs.codeql-category-suffix != ''
+            && format('-{0}', inputs.codeql-category-suffix)
+            || '' }}

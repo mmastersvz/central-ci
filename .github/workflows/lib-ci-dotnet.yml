@@ -130,6 +130,15 @@ jobs:
           project-path: ${{ inputs.project-path }}
           working-directory: ${{ inputs.app-dir }}
 
+      - uses: mmastersvz/central-ci/actions/security-sast-post-scans@main
+        with:
+          codeql-languages: csharp # TODO add to setup
+          codeql-build-mode: manual
+          # codeql-config-file: .github/codeql/csharp-config.yml
+          # codeql-category-suffix: dotnet
+          codeql-category-suffix: ${{ inputs.app-name }}
+          working-directory: ${{ inputs.app-dir }}
+
       - name: "Docker: Build and Publish Image"
         uses: mmastersvz/central-ci/actions/docker-publish@main
         with:
@@ -146,23 +155,6 @@ jobs:
           app-name: ${{ inputs.app-name }}
           image-ref: ${{ needs.setup.outputs.docker-tags }}
 
-  sast-post:
-    name: "SAST Scanning - Post build"
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      contents: read
-    steps:
-      - uses: mmastersvz/central-ci/actions/security-sast-scans@main
-        with:
-          skip-semgrep: true # Skip Semgrep as it should have been run in the pre-build SAST job; avoids redundant scanning and potential noise from generated code, dependencies, etc.
-          # semgrep-app-token: ${{ secrets.SEMGREP_APP_TOKEN }}
-          codeql-languages: csharp
-          codeql-build-mode: manual
-          # codeql-config-file: .github/codeql/csharp-config.yml
-          codeql-category-suffix: dotnet
-          working-directory: ${{ inputs.app-dir }}
   # TODO gating
   # gate:
   #   if: always()
