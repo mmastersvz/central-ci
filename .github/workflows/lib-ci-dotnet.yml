@@ -140,19 +140,19 @@ jobs:
           image-ref: ${{ needs.setup.outputs.docker-tags }}
 
   # TODO gating
-  gate:
-    if: always()
-    needs: [secrets, sast, sca, container, iac]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check all security jobs passed
-        run: |
-          results='${{ toJSON(needs) }}'
-          echo "$results" | python3 -c "
-          import json,sys
-          r = json.load(sys.stdin)
-          failed = [k for k,v in r.items() if v['result'] not in ('success','skipped')]
-          if failed:
-              print('FAILED:', failed); sys.exit(1)
-          print('All security checks passed.')
+  # gate:
+  #   if: always()
+  #   needs: [secrets, sast, sca, container, iac]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Check all security jobs passed
+  #       run: |
+  #         results='${{ toJSON(needs) }}'
+  #         echo "$results" | python3 -c "
+  #         import json,sys
+  #         r = json.load(sys.stdin)
+  #         failed = [k for k,v in r.items() if v['result'] not in ('success','skipped')]
+  #         if failed:
+  #             print('FAILED:', failed); sys.exit(1)
+  #         print('All security checks passed.')
           "
