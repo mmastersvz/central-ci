@@ -125,8 +125,8 @@ jobs:
       - name: "Setup: JDK"
         uses: actions/setup-java@v4
         with:
-          distribution: '${{ steps.tools.outputs.java-distribution }}'
-          java-version: '${{ steps.tools.outputs.java-version }}'
+          distribution: "${{ steps.tools.outputs.java-distribution }}"
+          java-version: "${{ steps.tools.outputs.java-version }}"
           cache: maven
 
       - name: "Lint: Java Checkstyle"
