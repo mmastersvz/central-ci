@@ -23,8 +23,8 @@ runs:
       shell: bash
 
     # Fallback: Super-Linter for mixed/other
-    - if: inputs.language == 'multi'
-      uses: super-linter/super-linter@v8
-      env:
-        DEFAULT_BRANCH: main
-        GITHUB_TOKEN: ${{ github.token }}
+    # - if: inputs.language == 'multi'
+    #   uses: super-linter/super-linter@v8
+    #   env:
+    #     DEFAULT_BRANCH: main
+    #     GITHUB_TOKEN: ${{ github.token }}
