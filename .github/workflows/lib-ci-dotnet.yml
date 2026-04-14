@@ -40,6 +40,7 @@ jobs:
           github-token: ${{ secrets.github-token }}
 
   sast:
+    name: "SAST Scanning"
     runs-on: ubuntu-latest
     permissions:
       security-events: write
