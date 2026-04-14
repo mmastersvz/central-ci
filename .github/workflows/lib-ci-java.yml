@@ -34,15 +34,15 @@ permissions:
   security-events: write # If you upload SARIF results (Trivy, etc.)
 
 jobs:
-  init-security-scans:
-    name: "Initial security scans"
+
+  secrets:
+    name: "Secrets Scanning"
     runs-on: ubuntu-latest
     steps:
-      - name: "Security: Initial Security Suite"
-        uses: mmastersvz/central-ci/actions/security-init-scans@main
+      - name: "Security: Secrets Scanning"
+        uses: mmastersvz/central-ci/actions/security-secrets-scans@main
         with:
-          app-name: ${{ inputs.app-name }}
-          app-dir: ${{ inputs.app-dir }}
+          github-token: ${{ secrets.github-token }}
 
   setup:
     name: "Setup"
