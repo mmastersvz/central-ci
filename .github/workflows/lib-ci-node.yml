@@ -1,0 +1,155 @@
+name: "CI: Node (reusable)"
+
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        required: true
+        type: string
+      app-dir:
+        required: true
+        type: string
+      language:
+        required: false
+        default: "node"
+        type: string
+      tool-versions-path:
+        required: false
+        default: "./.tool-versions"
+        type: string
+
+    secrets:
+      github-token:
+        required: true
+
+    # outputs:
+    #   build-version:
+    #     description: "The resolved build version"
+    #     value: ${{ jobs.setup.outputs.build-version }}
+
+permissions:
+  contents: read
+  packages: write # Needed for GHCR images
+  security-events: write # If you upload SARIF results (Trivy, etc.)
+
+jobs:
+  init-security-scans:
+    name: "Initial security scans"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Security: Initial Security Suite"
+        uses: mmastersvz/central-ci/actions/security-init-scans@main
+        with:
+          app-name: ${{ inputs.app-name }}
+          app-dir: ${{ inputs.app-dir }}
+
+  setup:
+    name: "Setup"
+    runs-on: ubuntu-latest
+    outputs:
+      build-version: ${{ steps.prep.outputs.build-version }}
+      docker-push: ${{ steps.setup-docker.outputs.docker-push }}
+      # tools-versions: ${{ steps.tools.outputs.tool-versions }}
+      node-version: ${{ steps.setup-app.outputs.node-version }}
+      docker-tags: ${{ steps.setup-docker.outputs.docker-tags }}
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Setup: CI"
+        id: prep
+        uses: mmastersvz/central-ci/actions/setup@main
+        with:
+          service-name: ${{ inputs.app-name }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Setup: APP"
+        id: setup-app
+        shell: bash
+        run: |
+          # Resolve Language Name
+          LANG_NAME="${{ inputs.language }}"
+          [[ "$LANG_NAME" == "node" ]] && LANG_NAME="node"
+
+          # Parse tool version
+          tool_version=$(grep "^${LANG_NAME} " "${{ inputs.tool-versions-path }}" | awk '{print $2}')
+          if [ -z "$tool_version" ]; then
+            echo "::errlatestor::Tool '${LANG_NAME}' not found in ${{ inputs.tool-versions-path }}"
+            exit 1
+          fi
+
+      - name: "Setup: Docker Metadata"
+        id: setup-docker
+        uses: mmastersvz/central-ci/actions/setup-docker@main
+        with:
+          app-name: ${{ inputs.app-name }}
+          app-version: ${{ steps.prep.outputs.build-version }}
+
+      # TODO: Node linting (ESLint)
+      # - name: "Lint: Node ESLint"
+      #   working-directory: ${{ inputs.app-dir }}
+      #   run: npm install && npm run lint
+
+  build:
+    name: "Build & Test"
+    runs-on: ubuntu-latest
+    needs: setup
+    strategy:
+      matrix:
+        node-version: ["22"]
+        # node-version: ["22", "24"]
+      fail-fast: false
+    defaults:
+      run:
+        working-directory: ${{ inputs.app-dir }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          # Caches node_modules based on package-lock.json hash
+          cache: npm
+          cache-dependency-path: ${{ inputs.app-dir }}/package-lock.json
+          # cache-dependency-path: services/node-service/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # - name: Lint
+      #   run: npm run lint --if-present
+
+      - name: Test
+        run: npm test
+
+      # - name: Upload coverage
+      #   if: matrix.node-version == '20'
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: node-coverage
+      #     path: services/node-service/coverage/
+      #     retention-days: 7
+
+      - name: "Docker: Build and Publish Image"
+        uses: mmastersvz/central-ci/actions/docker-publish@main
+        with:
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
+          docker-push: ${{ needs.setup.outputs.docker-push }}
+          docker-tags: ${{ needs.setup.outputs.docker-tags }}
+          context: ${{ inputs.app-dir }}
+          cache-scope: ${{ inputs.app-name }}
+
+      # post-security-scans:
+      #   name: "Post security scans"
+      #   runs-on: ubuntu-latest
+      #   needs: [setup, build]
+      #   steps:
+
+      - name: "Security: Trivy (container image)"
+        if: ${{ needs.setup.outputs.docker-push == 'true' }}
+        uses: mmastersvz/central-ci/actions/trivy-image-scan@main
+        with:
+          app-name: ${{ inputs.app-name }}
+          image-ref: ${{ needs.setup.outputs.docker-tags }}
