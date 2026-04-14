@@ -48,7 +48,7 @@ runs:
     - name: "Security: Secret Detection (TruffleHog)"
       uses: trufflesecurity/trufflehog@v3.94.3
       with:
-        path: ${{ github.workspace }}
+        path: ${{ inputs.path || github.workspace }}
         base: ${{ github.event.repository.default_branch || 'main' }}
         head: HEAD
         extra_args: --results=verified,unknown
