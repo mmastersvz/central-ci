@@ -35,10 +35,12 @@ runs:
     - name: "Security: Secret Detection (TruffleHog)"
       uses: trufflesecurity/trufflehog@v3.94.3
       with:
-        # If base is empty, we fall back to the SHA logic
         path: ${{ inputs.path || github.workspace }}
-        base: ${{ inputs.base || github.event.pull_request.base.sha || github.event.repository.default_branch }}
-        head: ${{ inputs.head || github.event.pull_request.head.sha || github.sha }}
+        # Base = the branch we're merging into / the previous state
+        base: ${{ inputs.base || github.event.pull_request.base.ref || github.event.repository.default_branch || 'main' }}
+        # Head = the code that was actually merged / pushed
+        head: ${{ inputs.head || github.event.pull_request.head.ref || github.ref_name || 'HEAD' }}
+
         extra_args: --results=verified,unknown
         # extra_args: ${{ inputs.extra_args }}
 
