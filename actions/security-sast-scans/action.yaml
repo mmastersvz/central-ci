@@ -4,6 +4,15 @@ description: >
   Designed for multi-language repos and monorepos.
 
 inputs:
+  skip-semgrep:
+    description: "Whether to skip the Semgrep scan (default: false)"
+    required: false
+    default: "false"
+  skip-codeql:
+    description: "Whether to skip the CodeQL scan (default: false)"
+    required: false
+    default: "false"
+
   semgrep-app-token:
     description: >
       Semgrep AppSec Platform token. If provided, uses platform rules + advanced features.
@@ -69,10 +78,12 @@ runs:
     # ====================== Semgrep ======================
     - name: Cache Semgrep Docker image
       uses: ScribeMD/docker-cache@0.5.0
+      if: ${{ inputs.skip-semgrep != 'true' }}
       with:
         key: docker-semgrep-v1-${{ runner.os }}
 
     - name: Run Semgrep
+      if: ${{ inputs.skip-semgrep != 'true' }}
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
@@ -87,7 +98,7 @@ runs:
 
     # TODO
     # - name: Upload Semgrep SARIF
-    #   if: always()
+    #   if: always()() && inputs.skip-semgrep != 'true'
     #   uses: github/codeql-action/upload-sarif@v4
     #   with:
     #     sarif_file: semgrep-results.sarif
@@ -96,6 +107,7 @@ runs:
 
     # ====================== CodeQL ======================
     - name: Initialize CodeQL
+      if: ${{ inputs.skip-codeql != 'true' }}
       uses: github/codeql-action/init@v4
       with:
         languages: ${{ inputs.codeql-languages }}
@@ -104,10 +116,11 @@ runs:
         # category is set at analyze step for better monorepo support
 
     - name: Autobuild (compiled languages)
-      if: ${{ inputs.codeql-build-mode == 'autobuild' }}
+      if: ${{ inputs.skip-codeql != 'true' && inputs.codeql-build-mode == 'autobuild' }}
       uses: github/codeql-action/autobuild@v4
 
     - name: Perform CodeQL Analysis
+      if: ${{ inputs.skip-codeql != 'true' }}
       uses: github/codeql-action/analyze@v4
       with:
         category: >-

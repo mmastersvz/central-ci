@@ -48,6 +48,7 @@ jobs:
     steps:
       - uses: mmastersvz/central-ci/actions/security-sast-scans@main
         with:
+          skip-codeql: true
           # semgrep-app-token: ${{ secrets.SEMGREP_APP_TOKEN }}
           codeql-languages: csharp
           codeql-build-mode: autobuild
@@ -145,6 +146,22 @@ jobs:
           app-name: ${{ inputs.app-name }}
           image-ref: ${{ needs.setup.outputs.docker-tags }}
 
+  sast-post:
+    name: "SAST Scanning - Post build"
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: mmastersvz/central-ci/actions/security-sast-scans@main
+        with:
+          skip-semgrep: true # Skip Semgrep as it should have been run in the pre-build SAST job; avoids redundant scanning and potential noise from generated code, dependencies, etc.
+          # semgrep-app-token: ${{ secrets.SEMGREP_APP_TOKEN }}
+          codeql-languages: csharp
+          codeql-build-mode: autobuild
+          # codeql-config-file: .github/codeql/csharp-config.yml
+          codeql-category-suffix: dotnet
+          working-directory: ${{ inputs.app-dir }}
   # TODO gating
   # gate:
   #   if: always()
