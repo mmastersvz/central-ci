@@ -7,8 +7,9 @@ on:
         required: true
         type: string
       app-dir:
-        required: true
+        required: false
         type: string
+        default: "."
       language:
         required: false
         default: "dotnet"
