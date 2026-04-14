@@ -24,7 +24,7 @@ on:
 
 permissions:
   contents: read
-  packages: read # Needed for pulling images from GHCR
+  packages: write # Needed for GHCR images
   security-events: write # If you upload SARIF results (Trivy, etc.)
 
 jobs:
