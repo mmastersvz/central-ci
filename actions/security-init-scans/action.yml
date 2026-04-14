@@ -60,6 +60,7 @@ runs:
             echo "base=$PREV" >> $GITHUB_OUTPUT
           fi
         fi
+        echo "Base commit for TruffleHog: $(cat $GITHUB_OUTPUT | grep base | cut -d= -f2)"
 
     - name: "Security: Secret Detection (TruffleHog)"
       uses: trufflesecurity/trufflehog@v3.94.3
