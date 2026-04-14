@@ -159,7 +159,7 @@ jobs:
           skip-semgrep: true # Skip Semgrep as it should have been run in the pre-build SAST job; avoids redundant scanning and potential noise from generated code, dependencies, etc.
           # semgrep-app-token: ${{ secrets.SEMGREP_APP_TOKEN }}
           codeql-languages: csharp
-          codeql-build-mode: autobuild
+          codeql-build-mode: manual
           # codeql-config-file: .github/codeql/csharp-config.yml
           codeql-category-suffix: dotnet
           working-directory: ${{ inputs.app-dir }}
