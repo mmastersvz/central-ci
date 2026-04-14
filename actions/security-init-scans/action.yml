@@ -45,12 +45,31 @@ runs:
         echo "Head SHA: ${{ github.event.pull_request.head.sha }}"
         git log --oneline -5
 
+    - name: Get previous commit for TruffleHog
+      id: prev-commit
+      shell: bash
+      run: |
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          echo "base=${{ github.event.pull_request.base.sha }}" >> $GITHUB_OUTPUT
+        else
+          # On push: use the parent of the current commit (HEAD~1)
+          PREV=$(git rev-parse HEAD~1 2>/dev/null || echo "")
+          if [[ -z "$PREV" ]]; then
+            echo "base=" >> $GITHUB_OUTPUT          # empty = scan full history (safe for first commit)
+          else
+            echo "base=$PREV" >> $GITHUB_OUTPUT
+          fi
+        fi
+
     - name: "Security: Secret Detection (TruffleHog)"
       uses: trufflesecurity/trufflehog@v3.94.3
       with:
         path: ${{ inputs.path || github.workspace }}
-        base: ""
+        # base: ${{ inputs.base || github.event.pull_request.base.sha || github.event.repository.default_branch }}
+        base: ${{ steps.prev-commit.outputs.base }}
+        # base: ""
         # base: HEAD~1
+        # head: ${{ inputs.head || github.event.pull_request.head.sha || github.sha }}
         head: HEAD
         extra_args: --results=verified,unknown
         # extra_args: ${{ inputs.extra_args }}
