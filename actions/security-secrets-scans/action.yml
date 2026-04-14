@@ -13,11 +13,16 @@ inputs:
     description: Extra arguments to pass to TruffleHog
     required: false
     default: --only-verified
+  do-checkout:
+    description: "Whether to perform a git checkout (default: true)"
+    required: false
+    default: "true"
 
 runs:
   using: composite
   steps:
     - uses: actions/checkout@v4
+      if: ${{ inputs.do-checkout != 'false' }} # Allow skipping checkout for Docker build contexts, etc.
       with:
         fetch-depth: 0
 
