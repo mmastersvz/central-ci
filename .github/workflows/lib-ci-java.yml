@@ -129,9 +129,11 @@ jobs:
           cache: maven
 
       - name: "Lint: Java Checkstyle"
+        working-directory: ${{ inputs.app-dir }}
         run: mvn checkstyle:check
 
       - name: "Lint: Java PMD"
+        working-directory: ${{ inputs.app-dir }}
         run: mvn pmd:check
 
       # - name: "Lint: java"
