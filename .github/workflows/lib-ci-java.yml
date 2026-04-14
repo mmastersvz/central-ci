@@ -1,0 +1,186 @@
+name: "CI: Java (reusable)"
+
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        required: true
+        type: string
+      app-dir:
+        required: true
+        type: string
+      language:
+        required: false
+        default: "java"
+        type: string
+      tool-versions-path:
+        required: false
+        default: "./.tool-versions"
+        type: string
+    outputs:
+      build-version:
+        description: "The resolved build version"
+        value: ${{ jobs.setup.outputs.build-version }}
+
+permissions:
+  contents: read
+  packages: write # Needed for GHCR images
+  security-events: write # If you upload SARIF results (Trivy, etc.)
+
+jobs:
+  init-security-scans:
+    name: "Initial security scans"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Security: Initial Security Suite"
+        uses: mmastersvz/central-ci/actions/security-init-scans@main
+        with:
+          app-name: ${{ inputs.app-name }}
+          app-dir: ${{ inputs.app-dir }}
+
+  setup:
+    name: "Setup"
+    runs-on: ubuntu-latest
+    outputs:
+      build-version: ${{ steps.prep.outputs.version }}
+      docker-push: ${{ steps.setup-docker.outputs.docker-push }}
+      # tools-versions: ${{ steps.tools.outputs.tool-versions }}
+      java-distribution: ${{ steps.tools.outputs.java-distribution }}
+      java-version: ${{ steps.tools.outputs.java-version }}
+      maven-version: ${{ steps.tools.outputs.maven-version }}
+      docker-tags: ${{ steps.setup-docker.outputs.docker-tags }}
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Setup: CI"
+        id: prep
+        uses: mmastersvz/central-ci/actions/setup@main
+        with:
+          service-name: ${{ inputs.app-name }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # TODO
+      # - name: Setup tools versions
+      #   id: tools
+      #   uses: mmastersvz/central-ci/actions/setup-tools@main
+      #   with:
+      #     tools: "java,gradle"
+
+      - name: "Setup: APP"
+        id: setup-app
+        shell: bash
+        run: |
+          # Resolve Language Name
+          LANG_NAME="${{ inputs.language }}"
+          [[ "$LANG_NAME" == "java" ]] && LANG_NAME="java"
+
+          # Parse tool version
+          tool_version=$(grep "^${LANG_NAME} " "${{ inputs.tool-versions-path }}" | awk '{print $2}')
+          if [ -z "$tool_version" ]; then
+            echo "::errlatestor::Tool '${LANG_NAME}' not found in ${{ inputs.tool-versions-path }}"
+            exit 1
+          fi
+
+      - name: Parse .tool-versions
+        id: tools
+        shell: bash
+        run: |
+          while IFS=' ' read -r tool version || [[ -n "$tool" ]]; do
+            [[ -z "$tool" || "$tool" == \#* ]] && continue
+
+            case "$tool" in
+              java)
+                # temurin-21.0.7+6.0.LTS → distribution=temurin, version=21
+                distribution="${version%%-*}"          # everything before first "-"
+                full_version="${version#*-}"           # everything after first "-"
+                major="${full_version%%.*}"            # everything before first "."
+                echo "java-distribution=${distribution}" >> $GITHUB_OUTPUT
+                echo "java-version=${major}"             >> $GITHUB_OUTPUT
+                ;;
+              maven)
+                echo "maven-version=${version}" >> $GITHUB_OUTPUT
+                ;;
+            esac
+          done < .tool-versions
+
+          # Debug output
+          cat $GITHUB_OUTPUT
+
+
+      - name: "Setup: Docker Metadata"
+        id: setup-docker
+        uses: mmastersvz/central-ci/actions/setup-docker@main
+        with:
+          app-name: ${{ inputs.app-name }}
+          app-version: ${{ steps.prep.outputs.build-version }}
+
+      # TODO: Java linting (SpotBugs, Checkstyle, etc.) - can be added as a separate action or integrated into the build step depending on preference
+      # - name: "Lint: java"
+      #   uses:
+
+  build:
+    name: "Build & Test"
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - uses: actions/checkout@v4
+
+      # - name: "Build: Run Java CI"
+      #   uses: mmastersvz/central-ci/actions/java-build-test@main
+      #   with:
+      #     app-dir: ${{ inputs.app-dir }}
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: ${{ needs.setup.outputs.java-version }}
+          distribution: ${{ needs.setup.outputs.java-distribution }}
+          cache: maven
+          cache-dependency-path: services/java-service/pom.xml # TODO: Change path to an input
+
+      - name: "Setup: Maven ${{ needs.setup.outputs.maven-version }}"
+        uses: stCarolas/setup-maven@v5
+        with:
+          maven-version: ${{ needs.setup.outputs.maven-version }}
+
+      - name: "Maven set app version: ${{ needs.setup.outputs.build-version }}"
+        shell: bash
+        env:
+          VERSION: ${{ needs.setup.outputs.build-version }}
+        run: |
+          mvn -B versions:set -DnewVersion=${VERSION}
+
+      - name: Build and test
+        run: mvn -B verify
+
+      # TODO
+      # - name: Upload Surefire reports
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: java-surefire-reports
+      #     path: services/java-service/target/surefire-reports/
+      #     retention-days: 7
+
+      - name: "Docker: Build and Publish Image"
+        uses: mmastersvz/central-ci/actions/docker-publish@main
+        with:
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
+          docker-push: ${{ needs.setup.outputs.docker-push }}
+          docker-tags: ${{ needs.setup.outputs.docker-tags }}
+          context: ${{ inputs.app-dir }}
+          cache-scope: ${{ inputs.app-name }}
+
+      # post-security-scans:
+      #   name: "Post security scans"
+      #   runs-on: ubuntu-latest
+      #   needs: [setup, build]
+      #   steps:
+
+      - name: "Security: Trivy (container image)"
+        if: ${{ needs.setup.outputs.docker-push == 'true' }}
+        uses: mmastersvz/central-ci/actions/trivy-image-scan@main
+        with:
+          app-name: ${{ inputs.app-name }}
+          image-ref: ${{ needs.setup.outputs.docker-tags }}
