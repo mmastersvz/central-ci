@@ -33,7 +33,6 @@ permissions:
   security-events: write # If you upload SARIF results (Trivy, etc.)
 
 jobs:
-
   secrets:
     name: "Secrets Scanning"
     runs-on: ubuntu-latest
