@@ -138,6 +138,7 @@ jobs:
           # codeql-category-suffix: dotnet
           codeql-category-suffix: ${{ inputs.app-name }}
           working-directory: ${{ inputs.app-dir }}
+          do-checkout: false
 
       - name: "Docker: Build and Publish Image"
         uses: mmastersvz/central-ci/actions/docker-publish@main
