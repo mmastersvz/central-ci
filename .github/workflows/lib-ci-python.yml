@@ -74,7 +74,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: mmastersvz/central-ci/actions/security-sca-scans@main
+      - name: "Security: SCA Scanning"
+        uses: mmastersvz/central-ci/actions/security-sca-scans@main
         with:
           app-name: ${{ inputs.app-name }}
           scan-ref: ${{ inputs.app-dir }}
