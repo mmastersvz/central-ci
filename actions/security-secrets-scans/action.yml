@@ -27,6 +27,7 @@ runs:
         fetch-depth: 0
 
     - name: "Security: Secrets | Gitleaks – scan history"
+      id: gitleaks
       uses: gitleaks/gitleaks-action@v2
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
@@ -38,6 +39,7 @@ runs:
         category: gitleaks
 
     - name: "Security: Secrets | TruffleHog – entropy scan"
+      id: trufflehog
       uses: trufflesecurity/trufflehog@v3.94.3
       with:
         # If base is empty, we fall back to the SHA logic
@@ -55,12 +57,32 @@ runs:
     - name: Summary
       if: always()
       shell: bash
+      env:
+        GITLEAKS_OUTCOME: ${{ steps.gitleaks.outcome }}
+        TRUFFLEHOG_OUTCOME: ${{ steps.trufflehog.outcome }}
       run: |
+        if [[ "$GITLEAKS_OUTCOME" == "success" ]]; then
+          GITLEAKS_STATUS="✅ No leaks detected"
+        else
+          GITLEAKS_STATUS="❌ Leaks detected"
+        fi
+        if [[ "$TRUFFLEHOG_OUTCOME" == "success" ]]; then
+          TRUFFLEHOG_STATUS="✅ No leaks detected"
+        else
+          TRUFFLEHOG_STATUS="❌ Leaks detected"
+        fi
+        if [[ "$GITLEAKS_OUTCOME" == "success" && "$TRUFFLEHOG_OUTCOME" == "success" ]]; then
+          OVERALL="✅"
+        else
+          OVERALL="❌"
+        fi
         {
-          echo "## Secrets Scan"
+          echo "## ${OVERALL} Secrets Scan"
           echo ""
-          echo "| Tool | Scope |"
-          echo "| --- | --- |"
-          echo "| **Gitleaks** | full git history |"
-          echo "| **TruffleHog** | entropy scan |"
+          echo "| Tool | Scope | Status |"
+          echo "| --- | --- | --- |"
+          echo "| **Gitleaks** | full git history | ${GITLEAKS_STATUS} |"
+          echo "| **TruffleHog** | entropy scan | ${TRUFFLEHOG_STATUS} |"
+          echo ""
+          echo "Gitleaks results uploaded to [Code Scanning](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/security/code-scanning?query=tool%3AGitleaks)."
         } >> "$GITHUB_STEP_SUMMARY"
