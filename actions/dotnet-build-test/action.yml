@@ -55,3 +55,21 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: dotnet test --no-build -c Release --verbosity normal
+
+    - name: Summary
+      if: always()
+      shell: bash
+      env:
+        BUILD_VERSION: ${{ inputs.build-version }}
+        DOTNET_VERSION: ${{ inputs.dotnet-version }}
+        PROJECT_PATH: ${{ inputs.project-path }}
+      run: |
+        {
+          echo "## .NET Build & Test"
+          echo ""
+          echo "| | |"
+          echo "| --- | --- |"
+          echo "| **Version** | \`${BUILD_VERSION}\` |"
+          echo "| **.NET SDK** | \`${DOTNET_VERSION}\` |"
+          echo "| **Project** | \`${PROJECT_PATH}\` |"
+        } >> "$GITHUB_STEP_SUMMARY"

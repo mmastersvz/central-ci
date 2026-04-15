@@ -42,3 +42,25 @@ runs:
       shell: bash
       run: go build -o app -v ./...
       working-directory: ${{ inputs.app-dir }}
+
+    - name: Summary
+      if: always()
+      shell: bash
+      working-directory: ${{ inputs.app-dir }}
+      env:
+        APP_DIR: ${{ inputs.app-dir }}
+      run: |
+        MODULE=$(head -1 go.mod | awk '{print $2}')
+        COVERAGE="n/a"
+        if [[ -f coverage.out ]]; then
+          COVERAGE=$(go tool cover -func=coverage.out | tail -1 | awk '{print $NF}')
+        fi
+        {
+          echo "## Go Build & Test"
+          echo ""
+          echo "| | |"
+          echo "| --- | --- |"
+          echo "| **Module** | \`${MODULE}\` |"
+          echo "| **Dir** | \`${APP_DIR}\` |"
+          echo "| **Coverage** | ${COVERAGE} |"
+        } >> "$GITHUB_STEP_SUMMARY"

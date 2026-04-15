@@ -39,3 +39,16 @@ runs:
         # base: ${{ inputs.base || github.event.pull_request.base.sha || github.sha }}
         # head: ${{ inputs.head }}
         extra_args: ${{ inputs.extra_args }}
+
+    - name: Summary
+      if: always()
+      shell: bash
+      run: |
+        {
+          echo "## Secrets Scan"
+          echo ""
+          echo "| Tool | Scope |"
+          echo "| --- | --- |"
+          echo "| **Gitleaks** | full git history |"
+          echo "| **TruffleHog** | entropy scan |"
+        } >> "$GITHUB_STEP_SUMMARY"

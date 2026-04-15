@@ -72,3 +72,22 @@ runs:
     #     sarif_file: semgrep-results.sarif
     #     category: semgrep${{ inputs.codeql-category-suffix != '' && format('-{0}', inputs.codeql-category-suffix) || '' }}
     #     checkout_path: ${{ github.workspace }}
+
+    - name: Summary
+      if: always()
+      shell: bash
+      env:
+        CONFIG: ${{ inputs.semgrep-config }}
+        WORKING_DIR: ${{ inputs.working-directory }}
+        SKIPPED: ${{ inputs.skip-semgrep }}
+      run: |
+        {
+          echo "## SAST: Semgrep"
+          echo ""
+          echo "| | |"
+          echo "| --- | --- |"
+          echo "| **Config** | \`${CONFIG}\` |"
+          echo "| **Working dir** | \`${WORKING_DIR}\` |"
+          echo "| **Skipped** | ${SKIPPED} |"
+          echo "| **Report** | \`semgrep-results.sarif\` |"
+        } >> "$GITHUB_STEP_SUMMARY"

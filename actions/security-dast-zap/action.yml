@@ -129,6 +129,24 @@ runs:
         cmd_options: ${{ inputs.cmd-options }}
         fail_action: ${{ inputs.fail-on-warn }}
 
+    - name: Summary
+      if: always()
+      shell: bash
+      env:
+        TARGET: ${{ env.ZAP_TARGET_URL }}
+        FAIL_ON_WARN: ${{ inputs.fail-on-warn }}
+        CMD_OPTIONS: ${{ inputs.cmd-options }}
+      run: |
+        {
+          echo "## ZAP DAST Baseline Scan"
+          echo ""
+          echo "| | |"
+          echo "| --- | --- |"
+          echo "| **Target** | \`${TARGET}\` |"
+          echo "| **Fail on warn** | \`${FAIL_ON_WARN}\` |"
+          echo "| **Options** | \`${CMD_OPTIONS}\` |"
+        } >> "$GITHUB_STEP_SUMMARY"
+
     - name: "ZAP: Stop target container"
       if: always()
       shell: bash

@@ -44,3 +44,21 @@ runs:
     #   uses: github/codeql-action/upload-sarif@v4
     #   with:
     #     sarif_file: ${{ steps.setup.outputs.OUTPUT_FILE }}
+
+    - name: Summary
+      if: always()
+      shell: bash
+      env:
+        IMAGE_REF: ${{ steps.setup.outputs.IMAGE_REF }}
+        SEVERITY: ${{ steps.setup.outputs.SEVERITY }}
+        OUTPUT_FILE: ${{ steps.setup.outputs.OUTPUT_FILE }}
+      run: |
+        {
+          echo "## Trivy Image Scan"
+          echo ""
+          echo "| | |"
+          echo "| --- | --- |"
+          echo "| **Image** | \`${IMAGE_REF}\` |"
+          echo "| **Severity** | \`${SEVERITY}\` |"
+          echo "| **Report** | \`${OUTPUT_FILE}\` |"
+        } >> "$GITHUB_STEP_SUMMARY"

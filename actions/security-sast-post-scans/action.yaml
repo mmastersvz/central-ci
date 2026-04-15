@@ -88,3 +88,24 @@ runs:
             && format('-{0}', inputs.codeql-category-suffix)
             || '' }}
         upload: ${{ inputs.codeql-upload-results }}
+
+    - name: Summary
+      if: always()
+      shell: bash
+      env:
+        LANGUAGES: ${{ inputs.codeql-languages }}
+        BUILD_MODE: ${{ inputs.codeql-build-mode }}
+        CATEGORY_SUFFIX: ${{ inputs.codeql-category-suffix }}
+        SKIPPED: ${{ inputs.skip-codeql }}
+      run: |
+        CATEGORY="codeql${CATEGORY_SUFFIX:+-${CATEGORY_SUFFIX}}"
+        {
+          echo "## SAST: CodeQL"
+          echo ""
+          echo "| | |"
+          echo "| --- | --- |"
+          echo "| **Languages** | \`${LANGUAGES}\` |"
+          echo "| **Build mode** | \`${BUILD_MODE}\` |"
+          echo "| **Category** | \`${CATEGORY}\` |"
+          echo "| **Skipped** | ${SKIPPED} |"
+        } >> "$GITHUB_STEP_SUMMARY"
