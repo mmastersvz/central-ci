@@ -56,14 +56,8 @@ jobs:
       security-events: write
       contents: read
     steps:
-      - uses: mmastersvz/central-ci/actions/security-sast-scans@main
+      - uses: mmastersvz/central-ci/actions/security-sast-pre-scans@main
         with:
-          skip-codeql: true
-          # semgrep-app-token: ${{ secrets.SEMGREP_APP_TOKEN }}
-          codeql-languages: csharp
-          codeql-build-mode: autobuild
-          # codeql-config-file: .github/codeql/csharp-config.yml
-          codeql-category-suffix: dotnet
           working-directory: ${{ inputs.app-dir }}
 
   setup:
