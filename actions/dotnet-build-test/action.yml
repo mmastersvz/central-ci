@@ -65,11 +65,14 @@ runs:
         PROJECT_PATH: ${{ inputs.project-path }}
       run: |
         {
-          echo "## .NET Build & Test"
+          echo "### .NET Build & Test"
+          echo ""
+          echo "<details><summary><strong>Build Info</strong></summary>"
           echo ""
           echo "| | |"
           echo "| --- | --- |"
           echo "| **Version** | \`${BUILD_VERSION}\` |"
           echo "| **.NET SDK** | \`${DOTNET_VERSION}\` |"
           echo "| **Project** | \`${PROJECT_PATH}\` |"
+          echo "</details>"
         } >> "$GITHUB_STEP_SUMMARY"

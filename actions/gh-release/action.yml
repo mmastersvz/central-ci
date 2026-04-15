@@ -64,7 +64,9 @@ runs:
           $notes_flag
 
         {
-          echo "### Release"
+          echo "### Release: ${TITLE}"
+          echo ""
+          echo "<details><summary><strong>Release Info</strong></summary>"
           echo ""
           echo "| | |"
           echo "| --- | --- |"
@@ -72,4 +74,5 @@ runs:
           echo "| **Bump** | ${RELEASE_TYPE:-n/a} |"
           echo "| **Previous** | \`${PREVIOUS_TAG:-none}\` |"
           echo "| **Release** | [${TAG}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${TAG}) |"
+          echo "</details>"
         } >> "$GITHUB_STEP_SUMMARY"

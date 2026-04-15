@@ -41,11 +41,14 @@ runs:
         fi
 
         {
-          echo "### Major Tag"
+          echo "### Major Tag: ${major_tag}"
+          echo ""
+          echo "<details><summary><strong>Build Info</strong></summary>"
           echo ""
           echo "| | |"
           echo "| --- | --- |"
           echo "| **Pinned tag** | \`${TAG}\` |"
           echo "| **Major tag** | [${major_tag}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${major_tag}) |"
           [[ -n "$compare_row" ]] && echo "$compare_row"
+          echo "</details>"
         } >> "$GITHUB_STEP_SUMMARY"

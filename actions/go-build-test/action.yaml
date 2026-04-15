@@ -56,11 +56,14 @@ runs:
           COVERAGE=$(go tool cover -func=coverage.out | tail -1 | awk '{print $NF}')
         fi
         {
-          echo "## Go Build & Test"
+          echo "### Go Build & Test"
+          echo ""
+          echo "<details><summary><strong>Build Info</strong></summary>"
           echo ""
           echo "| | |"
           echo "| --- | --- |"
           echo "| **Module** | \`${MODULE}\` |"
           echo "| **Dir** | \`${APP_DIR}\` |"
           echo "| **Coverage** | ${COVERAGE} |"
+          echo "</details>"
         } >> "$GITHUB_STEP_SUMMARY"

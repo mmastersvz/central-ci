@@ -67,7 +67,10 @@ runs:
         PACKAGE_URL="https://github.com/${OWNER_LC}/${REPO_LC}/pkgs/container/${REPO_LC}%2F${APP_NAME}"
 
         {
-          echo "## Publish Summary"
+          echo "### Container Info: ${APP_NAME}"
+          echo ""
+          echo "<details><summary><strong>Container Info</strong></summary>"
+          echo ""
           echo "|  |  |"
           echo "| --- | --- |"
           echo "| Container | [${REPO_LC}:${TAG}](${PACKAGE_URL}) |"
@@ -77,4 +80,5 @@ runs:
           echo "docker pull ghcr.io/${OWNER_LC}/${REPO_LC}/${APP_NAME}:${TAG}"
           echo '```'
           echo "Digest: \`${DIGEST}\`"
+          echo "</details>"
         } >> $GITHUB_STEP_SUMMARY

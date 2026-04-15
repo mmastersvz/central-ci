@@ -54,11 +54,14 @@ runs:
         OUTPUT_FILE: ${{ steps.setup.outputs.OUTPUT_FILE }}
       run: |
         {
-          echo "## Trivy Image Scan"
+          echo "### Trivy Image Scan"
+          echo ""
+          echo "<details><summary><strong>Scan Info</strong></summary>"
           echo ""
           echo "| | |"
           echo "| --- | --- |"
           echo "| **Image** | \`${IMAGE_REF}\` |"
           echo "| **Severity** | \`${SEVERITY}\` |"
           echo "| **Report** | \`${OUTPUT_FILE}\` |"
+          echo "</details>"
         } >> "$GITHUB_STEP_SUMMARY"

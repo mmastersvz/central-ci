@@ -23,10 +23,13 @@ runs:
         git push origin "$NEW_TAG"
 
         {
-          echo "### Tag"
+          echo "### Tag: ${NEW_TAG}"
+          echo ""
+          echo "<details><summary><strong>ZAP Info</strong></summary>"
           echo ""
           echo "| | |"
           echo "| --- | --- |"
           echo "| **Tag** | \`${NEW_TAG}\` |"
           echo "| **Link** | [${NEW_TAG}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${NEW_TAG}) |"
+          echo "</details>"
         } >> "$GITHUB_STEP_SUMMARY"
