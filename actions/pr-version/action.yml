@@ -42,7 +42,7 @@ runs:
         echo "version=${FULL_VERSION}" >> "$GITHUB_OUTPUT"
 
         {
-          echo "### PR Build Version: ${PR_NUM}"
+          echo "### PR Build Version: ${FULL_VERSION}"
           echo ""
           echo "<details><summary><strong>Version Info</strong></summary>"
           echo ""
