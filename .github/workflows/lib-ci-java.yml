@@ -64,7 +64,8 @@ jobs:
       security-events: write
       contents: read
     steps:
-      - uses: mmastersvz/central-ci/actions/security-sast-pre-scans@main
+      - name: "Security: SAST Pre-Scan"
+        uses: mmastersvz/central-ci/actions/security-sast-pre-scans@main
         with:
           working-directory: ${{ inputs.app-dir }}
 
