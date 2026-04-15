@@ -78,7 +78,7 @@ runs:
           OVERALL="❌"
         fi
         {
-          echo "## ${OVERALL} Secrets Scan"
+          echo "### ${OVERALL} Secrets Scan"
           echo ""
           echo "<details><summary><strong>Scan Info</strong></summary>"
           echo ""
