@@ -1,0 +1,44 @@
+name: "Release"
+description: "Creates a git tag and GitHub release for a successful main-branch build"
+
+inputs:
+  new-tag:
+    description: "Tag to create (e.g. api/v1.2.3)"
+    required: true
+  build-version:
+    description: "Bare version for the release title (e.g. 1.2.3)"
+    required: true
+  previous-tag:
+    description: "Previous tag for release notes range"
+    required: false
+    default: ""
+  release-type:
+    description: "Bump type: major, minor, patch"
+    required: false
+    default: ""
+  token:
+    description: "GitHub token with contents:write"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - uses: mmastersvz/central-ci/actions/setup-git-config@main
+
+    - uses: mmastersvz/central-ci/actions/git-tag@main
+      with:
+        new-tag: ${{ inputs.new-tag }}
+        token: ${{ inputs.token }}
+
+    - uses: mmastersvz/central-ci/actions/gh-release@main
+      with:
+        tag: ${{ inputs.new-tag }}
+        title: ${{ inputs.build-version }}
+        token: ${{ inputs.token }}
+        generate-notes: "true"
+        release-type: ${{ inputs.release-type }}
+        previous-tag: ${{ inputs.previous-tag }}
