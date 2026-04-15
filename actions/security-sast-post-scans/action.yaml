@@ -80,6 +80,7 @@ runs:
       uses: github/codeql-action/autobuild@v4
 
     - name: Perform CodeQL Analysis
+      id: codeql-analyze
       if: ${{ inputs.skip-codeql != 'true' }}
       uses: github/codeql-action/analyze@v4
       with:
@@ -97,10 +98,20 @@ runs:
         BUILD_MODE: ${{ inputs.codeql-build-mode }}
         CATEGORY_SUFFIX: ${{ inputs.codeql-category-suffix }}
         SKIPPED: ${{ inputs.skip-codeql }}
+        CODEQL_OUTCOME: ${{ steps.codeql-analyze.outcome }}
       run: |
         CATEGORY="codeql${CATEGORY_SUFFIX:+-${CATEGORY_SUFFIX}}"
+        if [[ "$CODEQL_OUTCOME" == "success" ]]; then
+          STATUS_EMOJI="✅"
+        elif [[ "$CODEQL_OUTCOME" == "failure" ]]; then
+          STATUS_EMOJI="❌"
+        elif [[ "$CODEQL_OUTCOME" == "skipped" ]]; then
+          STATUS_EMOJI="⏭️"
+        else
+          STATUS_EMOJI="⚠️"
+        fi
         {
-          echo "### SAST: CodeQL"
+          echo "### ${STATUS_EMOJI} SAST: CodeQL"
           echo ""
           echo "<details><summary><strong>CodeQL Info</strong></summary>"
           echo ""

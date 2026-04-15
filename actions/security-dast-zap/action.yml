@@ -121,6 +121,7 @@ runs:
         echo "Container is ready at ${TARGET}"
 
     - name: "ZAP: Baseline scan"
+      id: zap-scan
       uses: zaproxy/action-baseline@v0.14.0
       with:
         target: ${{ env.ZAP_TARGET_URL }}
@@ -137,9 +138,19 @@ runs:
         FAIL_ON_WARN: ${{ inputs.fail-on-warn }}
         CMD_OPTIONS: ${{ inputs.cmd-options }}
         RULES_FILE: ${{ inputs.rules-file }}
+        ZAP_OUTCOME: ${{ steps.zap-scan.outcome }}
       run: |
+        if [[ "$ZAP_OUTCOME" == "success" ]]; then
+          STATUS_EMOJI="✅"
+        elif [[ "$ZAP_OUTCOME" == "failure" ]]; then
+          STATUS_EMOJI="❌"
+        elif [[ "$ZAP_OUTCOME" == "skipped" ]]; then
+          STATUS_EMOJI="⏭️"
+        else
+          STATUS_EMOJI="⚠️"
+        fi
         {
-          echo "### DAST: ZAP Baseline Scan"
+          echo "### ${STATUS_EMOJI} DAST: ZAP Baseline Scan"
           echo ""
           echo "<details><summary><strong>ZAP Info</strong></summary>"
           echo ""
