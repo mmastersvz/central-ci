@@ -137,7 +137,8 @@ jobs:
           project-path: ${{ inputs.project-path }}
           working-directory: ${{ inputs.app-dir }}
 
-      - uses: mmastersvz/central-ci/actions/security-sast-post-scans@main
+      - name: "Security: SAST Scanning (CodeQL)"
+        uses: mmastersvz/central-ci/actions/security-sast-post-scans@main
         with:
           codeql-languages: csharp # TODO add to setup
           codeql-build-mode: none
