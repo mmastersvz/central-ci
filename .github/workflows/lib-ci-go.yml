@@ -157,7 +157,7 @@ jobs:
         uses: mmastersvz/central-ci/actions/security-sast-post-scans@main
         with:
           codeql-languages: go
-          codeql-build-mode: none
+          codeql-build-mode: autobuild
           codeql-category-suffix: ${{ inputs.app-name }}
           working-directory: ${{ inputs.app-dir }}
           do-checkout: false
