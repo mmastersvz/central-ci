@@ -41,7 +41,7 @@ concurrency:
 
 jobs:
   secrets:
-    name: "Secrets Scanning"
+    name: "Security: Secrets"
     runs-on: ubuntu-latest
     steps:
       - name: "Security: Secrets Scanning"
@@ -50,7 +50,7 @@ jobs:
           github-token: ${{ secrets.github-token }}
 
   sast-pre:
-    name: "SAST Scanning - Pre build"
+    name: "Security: SAST | Pre build"
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -137,7 +137,7 @@ jobs:
           project-path: ${{ inputs.project-path }}
           working-directory: ${{ inputs.app-dir }}
 
-      - name: "Security: SAST Scanning (CodeQL)"
+      - name: "Security: SAST | Post build"
         uses: mmastersvz/central-ci/actions/security-sast-post-scans@main
         with:
           codeql-languages: csharp # TODO add to setup
@@ -157,7 +157,7 @@ jobs:
           context: ./${{ inputs.app-dir }}
           cache-scope: ${{ inputs.app-name }}
 
-      - name: "Security: ZAP Baseline (DAST)"
+      - name: "Security: DAST | ZAP Baseline"
         if: >-
           ${{
             (github.event_name == 'pull_request' && inputs.dast-on-pr) ||
@@ -171,7 +171,7 @@ jobs:
           cache-scope: ${{ inputs.app-name }}
           github-token: ${{ secrets.github-token }}
 
-      - name: "Security: Trivy (container image)"
+      - name: "Security: Container"
         if: ${{ needs.setup.outputs.docker-push == 'true' }}
         uses: mmastersvz/central-ci/actions/trivy-image-scan@main
         with:
