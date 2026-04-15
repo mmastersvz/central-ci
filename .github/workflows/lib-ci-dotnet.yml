@@ -60,6 +60,17 @@ jobs:
         with:
           working-directory: ${{ inputs.app-dir }}
 
+  sca:
+    name: "Security: SCA"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mmastersvz/central-ci/actions/trivy-source-scan@main
+        with:
+          app-name: ${{ inputs.app-name }}
+          scan-ref: ${{ inputs.app-dir }}
+
   setup:
     name: "Setup"
     runs-on: ubuntu-latest
@@ -136,6 +147,18 @@ jobs:
           dotnet-version: ${{ needs.setup.outputs.dotnet-version }}
           project-path: ${{ inputs.project-path }}
           working-directory: ${{ inputs.app-dir }}
+
+      - name: "Security: NuGet Audit"
+        shell: bash
+        working-directory: ${{ inputs.app-dir }}
+        run: |
+          set -euo pipefail
+          output=$(dotnet list ${{ inputs.project-path }} package --vulnerable --include-transitive)
+          echo "$output"
+          if echo "$output" | grep -q "has the following vulnerable packages"; then
+            echo "::error::Vulnerable NuGet packages found — review output above"
+            exit 1
+          fi
 
       - name: "Security: SAST | Post build"
         uses: mmastersvz/central-ci/actions/security-sast-post-scans@main
