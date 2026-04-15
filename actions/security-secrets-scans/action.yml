@@ -31,7 +31,7 @@ runs:
       uses: gitleaks/gitleaks-action@v2
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
-        GITLEAKS_ENABLE_SUMMARY: "false" # Doing own custom summary at the end
+        GITLEAKS_ENABLE_SUMMARY: false # Doing own custom summary at the end
 
     - name: Upload Gitleaks SARIF
       uses: github/codeql-action/upload-sarif@v4
@@ -80,7 +80,7 @@ runs:
         {
           echo "## ${OVERALL} Secrets Scan"
           echo ""
-          echo "<details><summary><strong>Semgrep Info</strong></summary>"
+          echo "<details><summary><strong>Scan Info</strong></summary>"
           echo ""
           echo "| Tool | Scope | Status |"
           echo "| --- | --- | --- |"
