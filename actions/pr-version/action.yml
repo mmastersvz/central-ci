@@ -42,7 +42,9 @@ runs:
         echo "version=${FULL_VERSION}" >> "$GITHUB_OUTPUT"
 
         {
-          echo "### PR Build Version"
+          echo "### PR Build Version: ${PR_NUM}"
+          echo ""
+          echo "<details><summary><strong>Version Info</strong></summary>"
           echo ""
           echo "| | |"
           echo "| --- | --- |"
@@ -50,4 +52,5 @@ runs:
           echo "| **Run** | ${GITHUB_RUN_NUMBER} (attempt ${GITHUB_RUN_ATTEMPT}) |"
           echo "| **Version** | \`${FULL_VERSION}\` |"
           echo "| **Build ID** | \`${BUILD_ID}\` |"
+          echo "</details>"
         } >> "$GITHUB_STEP_SUMMARY"
