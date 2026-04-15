@@ -32,6 +32,8 @@ on:
     secrets:
       github-token:
         required: true
+      nvd-api-key:
+        required: false
 
     outputs:
       build-version:
@@ -196,6 +198,8 @@ jobs:
 
       - name: "Security: Maven Dependency Audit"
         shell: bash
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: |
           set -euo pipefail
           mvn -B org.owasp:dependency-check-maven:check \
