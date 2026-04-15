@@ -18,30 +18,66 @@ on:
         required: false
         default: "./.tool-versions"
         type: string
+      dast-on-pr:
+        description: "Run ZAP baseline DAST scan on pull requests"
+        required: false
+        type: boolean
+        default: true
+      dast-on-push:
+        description: "Run ZAP baseline DAST scan on push to main"
+        required: false
+        type: boolean
+        default: true
 
     secrets:
       github-token:
         required: true
 
-    # outputs:
-    #   build-version:
-    #     description: "The resolved build version"
-    #     value: ${{ jobs.setup.outputs.build-version }}
+    outputs:
+      build-version:
+        description: "The resolved build version"
+        value: ${{ jobs.setup.outputs.build-version }}
 
 permissions:
   contents: read
   packages: write # Needed for GHCR images
   security-events: write # If you upload SARIF results (Trivy, etc.)
 
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && github.run_id || format('{0}-main', inputs.app-name) }}
+  cancel-in-progress: false
+
 jobs:
   secrets:
-    name: "Secrets Scanning"
+    name: "Security: Secrets"
     runs-on: ubuntu-latest
     steps:
       - name: "Security: Secrets Scanning"
         uses: mmastersvz/central-ci/actions/security-secrets-scans@main
         with:
           github-token: ${{ secrets.github-token }}
+
+  sast-pre:
+    name: "Security: SAST | Pre build"
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: mmastersvz/central-ci/actions/security-sast-pre-scans@main
+        with:
+          working-directory: ${{ inputs.app-dir }}
+
+  sca:
+    name: "Security: SCA"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mmastersvz/central-ci/actions/security-sca-scans@main
+        with:
+          app-name: ${{ inputs.app-name }}
+          scan-ref: ${{ inputs.app-dir }}
 
   setup:
     name: "Setup"
@@ -52,7 +88,6 @@ jobs:
       previous-tag:  ${{ steps.prep.outputs.previous-tag }}
       release-type:  ${{ steps.prep.outputs.release-type }}
       docker-push: ${{ steps.setup-docker.outputs.docker-push }}
-      # tools-versions: ${{ steps.tools.outputs.tool-versions }}
       java-distribution: ${{ steps.tools.outputs.java-distribution }}
       java-version: ${{ steps.tools.outputs.java-version }}
       maven-version: ${{ steps.tools.outputs.maven-version }}
@@ -60,40 +95,21 @@ jobs:
     steps:
       - name: "Checkout"
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: "Setup: CI"
         id: prep
         uses: mmastersvz/central-ci/actions/setup@main
         with:
           service-name: ${{ inputs.app-name }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      # TODO
-      # - name: Setup tools versions
-      #   id: tools
-      #   uses: mmastersvz/central-ci/actions/setup-tools@main
-      #   with:
-      #     tools: "java,gradle"
-
-      - name: "Setup: APP"
-        id: setup-app
-        shell: bash
-        run: |
-          # Resolve Language Name
-          LANG_NAME="${{ inputs.language }}"
-          [[ "$LANG_NAME" == "java" ]] && LANG_NAME="java"
-
-          # Parse tool version
-          tool_version=$(grep "^${LANG_NAME} " "${{ inputs.tool-versions-path }}" | awk '{print $2}')
-          if [ -z "$tool_version" ]; then
-            echo "::errlatestor::Tool '${LANG_NAME}' not found in ${{ inputs.tool-versions-path }}"
-            exit 1
-          fi
+          github-token: ${{ secrets.github-token }}
 
       - name: Parse .tool-versions
         id: tools
         shell: bash
         run: |
+          set -euo pipefail
           while IFS=' ' read -r tool version || [[ -n "$tool" ]]; do
             [[ -z "$tool" || "$tool" == \#* ]] && continue
 
@@ -103,17 +119,14 @@ jobs:
                 distribution="${version%%-*}"          # everything before first "-"
                 full_version="${version#*-}"           # everything after first "-"
                 major="${full_version%%.*}"            # everything before first "."
-                echo "java-distribution=${distribution}" >> $GITHUB_OUTPUT
-                echo "java-version=${major}"             >> $GITHUB_OUTPUT
+                echo "java-distribution=${distribution}" >> "$GITHUB_OUTPUT"
+                echo "java-version=${major}"             >> "$GITHUB_OUTPUT"
                 ;;
               maven)
-                echo "maven-version=${version}" >> $GITHUB_OUTPUT
+                echo "maven-version=${version}" >> "$GITHUB_OUTPUT"
                 ;;
             esac
           done < .tool-versions
-
-          # Debug output
-          cat $GITHUB_OUTPUT
 
       - name: "Setup: Docker Metadata"
         id: setup-docker
@@ -121,8 +134,6 @@ jobs:
         with:
           app-name: ${{ inputs.app-name }}
           app-version: ${{ steps.prep.outputs.build-version }}
-
-      # TODO: Java linting (SpotBugs, Checkstyle, etc.) - can be added as a separate action or integrated into the build step depending on preference
 
       - name: "Setup: JDK"
         uses: actions/setup-java@v4
@@ -139,9 +150,6 @@ jobs:
         working-directory: ${{ inputs.app-dir }}
         run: mvn pmd:check
 
-      # - name: "Lint: java"
-      #   uses:
-
   build:
     name: "Build & Test"
     runs-on: ubuntu-latest
@@ -153,18 +161,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # - name: "Build: Run Java CI"
-      #   uses: mmastersvz/central-ci/actions/java-build-test@main
-      #   with:
-      #     app-dir: ${{ inputs.app-dir }}
-
-      - name: Set up Java 21
-        uses: actions/setup-java@v5
+      - name: "Setup: JDK ${{ needs.setup.outputs.java-version }}"
+        uses: actions/setup-java@v4
         with:
           java-version: ${{ needs.setup.outputs.java-version }}
           distribution: ${{ needs.setup.outputs.java-distribution }}
           cache: maven
-          cache-dependency-path: services/java-service/pom.xml # TODO: Change path to an input
 
       - name: "Setup: Maven ${{ needs.setup.outputs.maven-version }}"
         uses: stCarolas/setup-maven@v5
@@ -176,38 +178,79 @@ jobs:
         env:
           VERSION: ${{ needs.setup.outputs.build-version }}
         run: |
-          mvn -B versions:set -DnewVersion=${VERSION}
+          set -euo pipefail
+          mvn -B versions:set -DnewVersion="${VERSION}"
+
+      - name: "Security: SAST | Post build (CodeQL init)"
+        uses: github/codeql-action/init@v4
+        with:
+          languages: java
+          build-mode: autobuild
+          # category is set at analyze step
+        # Note: CodeQL init must run before the Maven build so it can observe compilation
 
       - name: Build and test
         run: mvn -B verify
 
-      # TODO
-      # - name: Upload Surefire reports
-      #   if: always()
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: java-surefire-reports
-      #     path: services/java-service/target/surefire-reports/
-      #     retention-days: 7
+      - name: "Security: Maven Dependency Audit"
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B org.owasp:dependency-check-maven:check \
+            -DfailBuildOnCVSS=7 \
+            -DsuppressionsLocation=.github/owasp-suppressions.xml 2>/dev/null || \
+          mvn -B org.owasp:dependency-check-maven:check \
+            -DfailBuildOnCVSS=7
+
+      - name: "Security: SAST | Post build (CodeQL analyze)"
+        id: codeql-analyze
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: codeql-${{ inputs.app-name }}
+          upload: false
 
       - name: "Docker: Build and Publish Image"
         uses: mmastersvz/central-ci/actions/docker-publish@main
         with:
-          registry-password: ${{ secrets.GITHUB_TOKEN }}
+          registry-password: ${{ secrets.github-token }}
           docker-push: ${{ needs.setup.outputs.docker-push }}
           docker-tags: ${{ needs.setup.outputs.docker-tags }}
           context: ${{ inputs.app-dir }}
           cache-scope: ${{ inputs.app-name }}
 
-      # post-security-scans:
-      #   name: "Post security scans"
-      #   runs-on: ubuntu-latest
-      #   needs: [setup, build]
-      #   steps:
+      - name: "Security: DAST | ZAP Baseline"
+        if: >-
+          ${{
+            (github.event_name == 'pull_request' && inputs.dast-on-pr) ||
+            (github.event_name != 'pull_request' && inputs.dast-on-push)
+          }}
+        uses: mmastersvz/central-ci/actions/security-dast-zap@main
+        with:
+          image-ref: ${{ needs.setup.outputs.docker-tags }}
+          load-local: ${{ needs.setup.outputs.docker-push != 'true' }}
+          build-context: ./${{ inputs.app-dir }}
+          cache-scope: ${{ inputs.app-name }}
+          github-token: ${{ secrets.github-token }}
 
-      - name: "Security: Trivy (container image)"
+      - name: "Security: Container"
         if: ${{ needs.setup.outputs.docker-push == 'true' }}
         uses: mmastersvz/central-ci/actions/trivy-image-scan@main
         with:
           app-name: ${{ inputs.app-name }}
           image-ref: ${{ needs.setup.outputs.docker-tags }}
+
+  release:
+    name: "Tag and Release"
+    runs-on: ubuntu-latest
+    needs: [setup, build]
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
+    steps:
+      - uses: mmastersvz/central-ci/actions/release@main
+        with:
+          new-tag:       ${{ needs.setup.outputs.new-tag }}
+          build-version: ${{ needs.setup.outputs.build-version }}
+          previous-tag:  ${{ needs.setup.outputs.previous-tag }}
+          release-type:  ${{ needs.setup.outputs.release-type }}
+          token:         ${{ secrets.github-token }}

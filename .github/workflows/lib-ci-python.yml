@@ -1,4 +1,4 @@
-name: "CI: Node (reusable)"
+name: "CI: Python (reusable)"
 
 on:
   workflow_call:
@@ -18,25 +18,66 @@ on:
         required: false
         default: "./.tool-versions"
         type: string
+      dast-on-pr:
+        description: "Run ZAP baseline DAST scan on pull requests"
+        required: false
+        type: boolean
+        default: true
+      dast-on-push:
+        description: "Run ZAP baseline DAST scan on push to main"
+        required: false
+        type: boolean
+        default: true
 
     secrets:
       github-token:
         required: true
+
+    outputs:
+      build-version:
+        description: "The resolved build version"
+        value: ${{ jobs.setup.outputs.build-version }}
 
 permissions:
   contents: read
   packages: write # Needed for GHCR images
   security-events: write # If you upload SARIF results (Trivy, etc.)
 
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && github.run_id || format('{0}-main', inputs.app-name) }}
+  cancel-in-progress: false
+
 jobs:
   secrets:
-    name: "Secrets Scanning"
+    name: "Security: Secrets"
     runs-on: ubuntu-latest
     steps:
       - name: "Security: Secrets Scanning"
         uses: mmastersvz/central-ci/actions/security-secrets-scans@main
         with:
           github-token: ${{ secrets.github-token }}
+
+  sast-pre:
+    name: "Security: SAST | Pre build"
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    steps:
+      - uses: mmastersvz/central-ci/actions/security-sast-pre-scans@main
+        with:
+          working-directory: ${{ inputs.app-dir }}
+
+  sca:
+    name: "Security: SCA"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mmastersvz/central-ci/actions/security-sca-scans@main
+        with:
+          app-name: ${{ inputs.app-name }}
+          scan-ref: ${{ inputs.app-dir }}
 
   setup:
     name: "Setup"
@@ -47,34 +88,33 @@ jobs:
       previous-tag:  ${{ steps.prep.outputs.previous-tag }}
       release-type:  ${{ steps.prep.outputs.release-type }}
       docker-push: ${{ steps.setup-docker.outputs.docker-push }}
-      # tools-versions: ${{ steps.tools.outputs.tool-versions }}
       python-version: ${{ steps.setup-app.outputs.python-version }}
       docker-tags: ${{ steps.setup-docker.outputs.docker-tags }}
     steps:
       - name: "Checkout"
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: "Setup: CI"
         id: prep
         uses: mmastersvz/central-ci/actions/setup@main
         with:
           service-name: ${{ inputs.app-name }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.github-token }}
 
       - name: "Setup: APP"
         id: setup-app
         shell: bash
         run: |
-          # Resolve Language Name
-          LANG_NAME="${{ inputs.language }}"
-          [[ "$LANG_NAME" == "python" ]] && LANG_NAME="python"
-
+          set -euo pipefail
           # Parse tool version
-          tool_version=$(grep "^${LANG_NAME} " "${{ inputs.tool-versions-path }}" | awk '{print $2}')
+          tool_version=$(grep "^${{ inputs.language }} " "${{ inputs.tool-versions-path }}" | awk '{print $2}')
           if [ -z "$tool_version" ]; then
-            echo "::errlatestor::Tool '${LANG_NAME}' not found in ${{ inputs.tool-versions-path }}"
+            echo "::error::Tool '${{ inputs.language }}' not found in ${{ inputs.tool-versions-path }}"
             exit 1
           fi
+          echo "python-version=${tool_version}" >> "$GITHUB_OUTPUT"
 
       - name: "Setup: Docker Metadata"
         id: setup-docker
@@ -105,7 +145,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ needs.setup.outputs.python-version }}
-          # Caches the pip download cache keyed on requirements.txt hash
           cache: pip
           cache-dependency-path: ${{ inputs.app-dir }}/requirements.txt
 
@@ -120,24 +159,62 @@ jobs:
       - name: Test
         run: pytest -v --tb=short
 
+      - name: "Security: pip Audit"
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt
+
+      - name: "Security: SAST | Post build"
+        uses: mmastersvz/central-ci/actions/security-sast-post-scans@main
+        with:
+          codeql-languages: python
+          codeql-build-mode: none
+          codeql-category-suffix: ${{ inputs.app-name }}
+          working-directory: ${{ inputs.app-dir }}
+          do-checkout: false
+
       - name: "Docker: Build and Publish Image"
         uses: mmastersvz/central-ci/actions/docker-publish@main
         with:
-          registry-password: ${{ secrets.GITHUB_TOKEN }}
+          registry-password: ${{ secrets.github-token }}
           docker-push: ${{ needs.setup.outputs.docker-push }}
           docker-tags: ${{ needs.setup.outputs.docker-tags }}
           context: ${{ inputs.app-dir }}
           cache-scope: ${{ inputs.app-name }}
 
-      # post-security-scans:
-      #   name: "Post security scans"
-      #   runs-on: ubuntu-latest
-      #   needs: [setup, build]
-      #   steps:
+      - name: "Security: DAST | ZAP Baseline"
+        if: >-
+          ${{
+            (github.event_name == 'pull_request' && inputs.dast-on-pr) ||
+            (github.event_name != 'pull_request' && inputs.dast-on-push)
+          }}
+        uses: mmastersvz/central-ci/actions/security-dast-zap@main
+        with:
+          image-ref: ${{ needs.setup.outputs.docker-tags }}
+          load-local: ${{ needs.setup.outputs.docker-push != 'true' }}
+          build-context: ./${{ inputs.app-dir }}
+          cache-scope: ${{ inputs.app-name }}
+          github-token: ${{ secrets.github-token }}
 
-      - name: "Security: Trivy (container image)"
+      - name: "Security: Container"
         if: ${{ needs.setup.outputs.docker-push == 'true' }}
         uses: mmastersvz/central-ci/actions/trivy-image-scan@main
         with:
           app-name: ${{ inputs.app-name }}
           image-ref: ${{ needs.setup.outputs.docker-tags }}
+
+  release:
+    name: "Tag and Release"
+    runs-on: ubuntu-latest
+    needs: [setup, build]
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
+    steps:
+      - uses: mmastersvz/central-ci/actions/release@main
+        with:
+          new-tag:       ${{ needs.setup.outputs.new-tag }}
+          build-version: ${{ needs.setup.outputs.build-version }}
+          previous-tag:  ${{ needs.setup.outputs.previous-tag }}
+          release-type:  ${{ needs.setup.outputs.release-type }}
+          token:         ${{ secrets.github-token }}
