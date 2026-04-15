@@ -83,11 +83,16 @@ runs:
             semgrep ci --sarif --output "/src/${OUTPUT_FILE}" || SEMGREP_EXIT=$?
         else
           echo "Running Semgrep in OSS mode with config: ${SEMGREP_CONFIG}"
+          CONFIG_FLAGS=""
+          for cfg in $SEMGREP_CONFIG; do
+            CONFIG_FLAGS="${CONFIG_FLAGS} --config ${cfg}"
+          done
+          # shellcheck disable=SC2086
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/src" \
             -w "/src/${WORKING_DIR}" \
             "semgrep/semgrep:${IMAGE_TAG}" \
-            semgrep scan --config "${SEMGREP_CONFIG}" --sarif --output "/src/${OUTPUT_FILE}" || SEMGREP_EXIT=$?
+            semgrep scan ${CONFIG_FLAGS} --sarif --output "/src/${OUTPUT_FILE}" || SEMGREP_EXIT=$?
         fi
         # Exit 0: no findings. Exit 1/7: findings detected — scan ran, SARIF written, step fails to block PR.
         # Any other code is a fatal Semgrep error.
