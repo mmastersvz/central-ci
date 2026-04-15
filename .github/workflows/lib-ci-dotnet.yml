@@ -199,3 +199,19 @@ jobs:
   #         if failed:
   #             print('FAILED:', failed); sys.exit(1)
   #         print('All security checks passed.')
+
+  release:
+    name: "Tag and Release"
+    runs-on: ubuntu-latest
+    needs: [setup, build]
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: write
+    steps:
+      - uses: mmastersvz/central-ci/actions/release@main
+        with:
+          new-tag:       ${{ needs.setup.outputs.new-tag }}
+          build-version: ${{ needs.setup.outputs.build-version }}
+          previous-tag:  ${{ needs.setup.outputs.previous-tag }}
+          release-type:  ${{ needs.setup.outputs.release-type }}
+          token:         ${{ secrets.github-token }}
