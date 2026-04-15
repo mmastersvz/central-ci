@@ -71,6 +71,9 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       build-version: ${{ steps.prep.outputs.build-version }}
+      new-tag:       ${{ steps.prep.outputs.new-tag }}
+      previous-tag:  ${{ steps.prep.outputs.previous-tag }}
+      release-type:  ${{ steps.prep.outputs.release-type }}
       docker-push: ${{ steps.setup-docker.outputs.docker-push }}
       dotnet-version: ${{ steps.setup-app.outputs.dotnet-version }}
       docker-tags: ${{ steps.setup-docker.outputs.docker-tags }}
