@@ -22,6 +22,16 @@ inputs:
     required: false
     default: "p/default p/owasp-top-ten p/cwe-top-25 p/secrets"
 
+  semgrep-output-file:
+    description: "The filename for the Semgrep SARIF output (default: semgrep-results.sarif)"
+    required: false
+    default: "semgrep-results.sarif"
+
+  semgrep-image-tag:
+    description: "The tag of the Semgrep Docker image to use (default: 1.159.0)"
+    required: false
+    default: "1.159.0"
+
   do-checkout:
     description: "Whether to perform a git checkout (default: true)"
     required: false
@@ -51,26 +61,40 @@ runs:
         key: docker-semgrep-v1-${{ runner.os }}
 
     - name: Run Semgrep
+      id: semgrep-run
       if: ${{ inputs.skip-semgrep != 'true' }}
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      run: |
-        docker run --rm \
-          -v "$GITHUB_WORKSPACE:/src" \
-          -w "/src/${{ inputs.working-directory }}" \
-          -e SEMGREP_APP_TOKEN \
-          semgrep/semgrep:1.159.0 \
-          semgrep ci --sarif --output /src/semgrep-results.sarif
       env:
         SEMGREP_APP_TOKEN: ${{ inputs.semgrep-app-token || '' }}
+        OUTPUT_FILE: ${{ inputs.semgrep-output-file }}
+        SEMGREP_CONFIG: ${{ inputs.semgrep-config }}
+        IMAGE_TAG: ${{ inputs.semgrep-image-tag }}
+        WORKING_DIR: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+        if [[ -n "$SEMGREP_APP_TOKEN" ]]; then
+          echo "Running Semgrep with AppSec Platform token (config from platform, not local)"
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/src" \
+            -w "/src/${WORKING_DIR}" \
+            -e SEMGREP_APP_TOKEN \
+            "semgrep/semgrep:${IMAGE_TAG}" \
+            semgrep ci --sarif --output "/src/${OUTPUT_FILE}"
+        else
+          echo "Running Semgrep in OSS mode with config: ${SEMGREP_CONFIG}"
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/src" \
+            -w "/src/${WORKING_DIR}" \
+            "semgrep/semgrep:${IMAGE_TAG}" \
+            semgrep scan --config "${SEMGREP_CONFIG}" --sarif --output "/src/${OUTPUT_FILE}"
+        fi
 
-    # TODO
     - name: Upload Semgrep SARIF
-      if: always()
+      if: ${{ steps.semgrep-run.outcome == 'success' }}
       uses: github/codeql-action/upload-sarif@v4
       with:
-        sarif_file: semgrep-results.sarif
-        category: semgrep${{ inputs.codeql-category-suffix != '' && format('-{0}', inputs.codeql-category-suffix) || '' }}
+        sarif_file: ${{ inputs.semgrep-output-file }}
+        category: semgrep
         checkout_path: ${{ github.workspace }}
 
     - name: Summary
@@ -80,9 +104,20 @@ runs:
         CONFIG: ${{ inputs.semgrep-config }}
         WORKING_DIR: ${{ inputs.working-directory }}
         SKIPPED: ${{ inputs.skip-semgrep }}
+        OUTPUT_FILE: ${{ inputs.semgrep-output-file }}
+        SEMGREP_OUTCOME: ${{ steps.semgrep-run.outcome }}
       run: |
+        if [[ "$SEMGREP_OUTCOME" == "success" ]]; then
+          STATUS_EMOJI="✅"
+        elif [[ "$SEMGREP_OUTCOME" == "failure" ]]; then
+          STATUS_EMOJI="❌"
+        elif [[ "$SEMGREP_OUTCOME" == "skipped" ]]; then
+          STATUS_EMOJI="⏭️"
+        else
+          STATUS_EMOJI="⚠️"
+        fi
         {
-          echo "### SAST: Semgrep"
+          echo "### ${STATUS_EMOJI} SAST: Semgrep"
           echo ""
           echo "<details><summary><strong>Semgrep Info</strong></summary>"
           echo ""
@@ -91,6 +126,6 @@ runs:
           echo "| **Config** | \`${CONFIG}\` |"
           echo "| **Working dir** | \`${WORKING_DIR}\` |"
           echo "| **Skipped** | ${SKIPPED} |"
-          echo "| **Report** | \`semgrep-results.sarif\` |"
+          echo "| **Report** | \`${OUTPUT_FILE}\` |"
           echo "</details>"
         } >> "$GITHUB_STEP_SUMMARY"
