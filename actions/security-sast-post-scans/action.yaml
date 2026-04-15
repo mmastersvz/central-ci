@@ -1,7 +1,8 @@
-name: "SAST Scan (Semgrep + CodeQL)"
+name: "SAST Scan (CodeQL)"
 description: >
-  Runs Semgrep (via official Docker image) and CodeQL static analysis.
-  Designed for multi-language repos and monorepos.
+  Runs CodeQL static analysis post-build. Required for compiled languages
+  (C#, Java, Go) where CodeQL needs to observe the build to construct its
+  code graph. For interpreted languages, use build-mode: none.
 
 inputs:
   skip-codeql:
