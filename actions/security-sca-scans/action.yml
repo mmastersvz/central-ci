@@ -35,6 +35,7 @@ runs:
     #   with:
 
     - name: Trivy FS Scan (source)
+      id: trivy-scan
       uses: aquasecurity/trivy-action@0.35.0
       with:
         scan-type: "fs"
@@ -44,6 +45,7 @@ runs:
         severity: ${{ steps.setup.outputs.SEVERITY }}
 
     - name: Upload Trivy SARIF
+      if: ${{ steps.trivy-scan.outcome == 'success' }}
       uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: ${{ steps.setup.outputs.OUTPUT_FILE }}
@@ -55,9 +57,19 @@ runs:
         SCAN_REF: ${{ steps.setup.outputs.SCAN_REF }}
         SEVERITY: ${{ steps.setup.outputs.SEVERITY }}
         OUTPUT_FILE: ${{ steps.setup.outputs.OUTPUT_FILE }}
+        TRIVY_OUTCOME: ${{ steps.trivy-scan.outcome }}
       run: |
+        if [[ "$TRIVY_OUTCOME" == "success" ]]; then
+          STATUS_EMOJI="✅"
+        elif [[ "$TRIVY_OUTCOME" == "failure" ]]; then
+          STATUS_EMOJI="❌"
+        elif [[ "$TRIVY_OUTCOME" == "skipped" ]]; then
+          STATUS_EMOJI="⏭️"
+        else
+          STATUS_EMOJI="⚠️"
+        fi
         {
-          echo "### Trivy Source Scan"
+          echo "### ${STATUS_EMOJI} SCA: Trivy"
           echo ""
           echo "<details><summary><strong>Scan Info</strong></summary>"
           echo ""
