@@ -71,7 +71,8 @@ runs:
         IMAGE_TAG: ${{ inputs.semgrep-image-tag }}
         WORKING_DIR: ${{ inputs.working-directory }}
       run: |
-        set -euo pipefail
+        set -uo pipefail
+        SEMGREP_EXIT=0
         if [[ -n "$SEMGREP_APP_TOKEN" ]]; then
           echo "Running Semgrep with AppSec Platform token (config from platform, not local)"
           docker run --rm \
@@ -79,18 +80,24 @@ runs:
             -w "/src/${WORKING_DIR}" \
             -e SEMGREP_APP_TOKEN \
             "semgrep/semgrep:${IMAGE_TAG}" \
-            semgrep ci --sarif --output "/src/${OUTPUT_FILE}"
+            semgrep ci --sarif --output "/src/${OUTPUT_FILE}" || SEMGREP_EXIT=$?
         else
           echo "Running Semgrep in OSS mode with config: ${SEMGREP_CONFIG}"
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/src" \
             -w "/src/${WORKING_DIR}" \
             "semgrep/semgrep:${IMAGE_TAG}" \
-            semgrep scan --config "${SEMGREP_CONFIG}" --sarif --output "/src/${OUTPUT_FILE}"
+            semgrep scan --config "${SEMGREP_CONFIG}" --sarif --output "/src/${OUTPUT_FILE}" || SEMGREP_EXIT=$?
         fi
+        # Exit 0: no findings. Exit 1/7: findings detected — scan ran, SARIF written, step fails to block PR.
+        # Any other code is a fatal Semgrep error.
+        if [[ $SEMGREP_EXIT -ne 0 && $SEMGREP_EXIT -ne 1 && $SEMGREP_EXIT -ne 7 ]]; then
+          echo "::error::Semgrep exited with unexpected code ${SEMGREP_EXIT}"
+        fi
+        exit $SEMGREP_EXIT
 
     - name: Upload Semgrep SARIF
-      if: ${{ steps.semgrep-run.outcome == 'success' }}
+      if: ${{ steps.semgrep-run.outcome == 'success' || steps.semgrep-run.outcome == 'failure' }}
       uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: ${{ inputs.semgrep-output-file }}
