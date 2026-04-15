@@ -25,7 +25,7 @@ runs:
         {
           echo "### Tag: ${NEW_TAG}"
           echo ""
-          echo "<details><summary><strong>ZAP Info</strong></summary>"
+          echo "<details><summary><strong>Tag Info</strong></summary>"
           echo ""
           echo "| | |"
           echo "| --- | --- |"
