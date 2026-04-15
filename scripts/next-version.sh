@@ -56,7 +56,7 @@ echo "release_type=${bump}"       >> "$GITHUB_OUTPUT"
 echo "build_version=${build_version}" >> "$GITHUB_OUTPUT"
 
 {
-  echo "### Version: ${new_tag}"
+  echo "### Version: \`${new_tag}\`"
   echo ""
   echo "<details><summary><strong>Version Info</strong></summary>"
   echo ""
