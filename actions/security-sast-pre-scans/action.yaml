@@ -82,7 +82,9 @@ runs:
         SKIPPED: ${{ inputs.skip-semgrep }}
       run: |
         {
-          echo "## SAST: Semgrep"
+          echo "### SAST: Semgrep"
+          echo ""
+          echo "<details><summary><strong>Semgrep Info</strong></summary>"
           echo ""
           echo "| | |"
           echo "| --- | --- |"
@@ -90,4 +92,5 @@ runs:
           echo "| **Working dir** | \`${WORKING_DIR}\` |"
           echo "| **Skipped** | ${SKIPPED} |"
           echo "| **Report** | \`semgrep-results.sarif\` |"
+          echo "</details>"
         } >> "$GITHUB_STEP_SUMMARY"

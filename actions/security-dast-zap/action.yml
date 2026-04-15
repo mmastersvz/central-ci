@@ -136,15 +136,20 @@ runs:
         TARGET: ${{ env.ZAP_TARGET_URL }}
         FAIL_ON_WARN: ${{ inputs.fail-on-warn }}
         CMD_OPTIONS: ${{ inputs.cmd-options }}
+        RULES_FILE: ${{ inputs.rules-file }}
       run: |
         {
-          echo "## ZAP DAST Baseline Scan"
+          echo "### DAST: ZAP Baseline Scan"
+          echo ""
+          echo "<details><summary><strong>ZAP Info</strong></summary>"
           echo ""
           echo "| | |"
           echo "| --- | --- |"
           echo "| **Target** | \`${TARGET}\` |"
           echo "| **Fail on warn** | \`${FAIL_ON_WARN}\` |"
+          echo "| **Rules file** | \`${RULES_FILE}\` |"
           echo "| **Options** | \`${CMD_OPTIONS}\` |"
+          echo "</details>"
         } >> "$GITHUB_STEP_SUMMARY"
 
     - name: "ZAP: Stop target container"

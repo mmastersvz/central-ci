@@ -100,7 +100,9 @@ runs:
       run: |
         CATEGORY="codeql${CATEGORY_SUFFIX:+-${CATEGORY_SUFFIX}}"
         {
-          echo "## SAST: CodeQL"
+          echo "### SAST: CodeQL"
+          echo ""
+          echo "<details><summary><strong>CodeQL Info</strong></summary>"
           echo ""
           echo "| | |"
           echo "| --- | --- |"
@@ -108,4 +110,5 @@ runs:
           echo "| **Build mode** | \`${BUILD_MODE}\` |"
           echo "| **Category** | \`${CATEGORY}\` |"
           echo "| **Skipped** | ${SKIPPED} |"
+          echo "</details>"
         } >> "$GITHUB_STEP_SUMMARY"
