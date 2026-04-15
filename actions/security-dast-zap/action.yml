@@ -96,6 +96,7 @@ runs:
         docker run -d \
           --name zap-target \
           --network host \
+          --user 1001:1001 \
           "${IMAGE}"
 
     - name: "ZAP: Wait for container to be ready"
