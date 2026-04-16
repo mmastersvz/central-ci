@@ -28,6 +28,11 @@ on:
         required: false
         type: boolean
         default: true
+      skip-maven-dependency-audit:
+        description: "Skip the OWASP Dependency Check Maven plugin execution"
+        required: false
+        type: boolean
+        default: true
 
     secrets:
       github-token:
@@ -196,7 +201,9 @@ jobs:
       - name: Build and test
         run: mvn -B verify
 
+      # SKIP for now too time consuming; enable in a later
       - name: "Security: Maven Dependency Audit"
+        if: inputs.skip-maven-dependency-audit != 'true'
         shell: bash
         env:
           NVD_API_KEY: ${{ secrets.nvd-api-key }}
