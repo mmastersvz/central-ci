@@ -203,7 +203,7 @@ jobs:
 
       # SKIP for now too time consuming; enable in a later
       - name: "Security: Maven Dependency Audit"
-        if: inputs.skip-maven-dependency-audit != 'true'
+        if: ${{ !fromJSON(inputs.skip-maven-dependency-audit) }}
         shell: bash
         env:
           NVD_API_KEY: ${{ secrets.nvd-api-key }}
