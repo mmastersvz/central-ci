@@ -199,14 +199,24 @@ jobs:
       - name: "Security: Maven Dependency Audit"
         shell: bash
         env:
-          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+          NVD_API_KEY: ${{ secrets.nvd-api-key }}
         run: |
           set -euo pipefail
-          mvn -B org.owasp:dependency-check-maven:check \
+          NVD_FLAG=""
+          if [[ -n "${NVD_API_KEY}" ]]; then
+            NVD_FLAG="-DnvdApiKey=${NVD_API_KEY}"
+          fi
+          # Try with suppressions file first; fall back without it if absent
+          # shellcheck disable=SC2086
+          if ! mvn -B org.owasp:dependency-check-maven:check \
             -DfailBuildOnCVSS=7 \
-            -DsuppressionsLocation=.github/owasp-suppressions.xml 2>/dev/null || \
-          mvn -B org.owasp:dependency-check-maven:check \
-            -DfailBuildOnCVSS=7
+            -DsuppressionsLocation=.github/owasp-suppressions.xml \
+            ${NVD_FLAG} 2>/dev/null; then
+            # shellcheck disable=SC2086
+            mvn -B org.owasp:dependency-check-maven:check \
+              -DfailBuildOnCVSS=7 \
+              ${NVD_FLAG}
+          fi
 
       - name: "Security: SAST | Post build (CodeQL analyze)"
         id: codeql-analyze
