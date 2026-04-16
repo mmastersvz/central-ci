@@ -40,7 +40,9 @@ runs:
 
     - name: Build
       shell: bash
-      run: go build -o app -v ./...
+      # CGO_ENABLED=0 produces a statically linked binary compatible with
+      # scratch/Alpine images that lack glibc (exec ENOENT otherwise).
+      run: CGO_ENABLED=0 GOOS=linux go build -o app -v ./...
       working-directory: ${{ inputs.app-dir }}
 
     - name: Summary
