@@ -28,6 +28,13 @@ on:
         required: false
         type: boolean
         default: true
+      pip-audit-args:
+        description: >
+          Extra arguments passed to pip-audit (e.g. --ignore-vuln GHSA-xxxx-yyyy
+          for CVEs with no available fix). Space-separated.
+        required: false
+        type: string
+        default: ""
 
     secrets:
       github-token:
@@ -162,9 +169,13 @@ jobs:
         run: pytest -v --tb=short
 
       - name: "Security: pip Audit"
+        env:
+          PIP_AUDIT_ARGS: ${{ inputs.pip-audit-args }}
         run: |
+          set -euo pipefail
           pip install pip-audit
-          pip-audit -r requirements.txt
+          # shellcheck disable=SC2086
+          pip-audit -r requirements.txt ${PIP_AUDIT_ARGS}
 
       - name: "Security: SAST | Post build"
         uses: mmastersvz/central-ci/actions/security-sast-post-scans@main
