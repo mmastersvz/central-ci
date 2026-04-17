@@ -64,7 +64,7 @@ runs:
           $notes_flag
 
         {
-          echo "### Release: ${TITLE}"
+          echo "### Release: \`${TAG}\`"
           echo ""
           echo "<details><summary><strong>Release Info</strong></summary>"
           echo ""

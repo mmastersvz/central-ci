@@ -22,14 +22,16 @@ runs:
         git tag "$NEW_TAG"
         git push origin "$NEW_TAG"
 
-        {
-          echo "### Tag: ${NEW_TAG}"
-          echo ""
-          echo "<details><summary><strong>Tag Info</strong></summary>"
-          echo ""
-          echo "| | |"
-          echo "| --- | --- |"
-          echo "| **Tag** | \`${NEW_TAG}\` |"
-          echo "| **Link** | [${NEW_TAG}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${NEW_TAG}) |"
-          echo "</details>"
-        } >> "$GITHUB_STEP_SUMMARY"
+        # {
+        #   echo "### Tag: \`${NEW_TAG}\`"
+        #   echo ""
+        #   echo "<details><summary><strong>Tag Info</strong></summary>"
+        #   echo ""
+        #   echo "| | |"
+        #   echo "| --- | --- |"
+        #   echo "| **Tag** | \`${NEW_TAG}\` |"
+        #   echo "| **Link** | [${NEW_TAG}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${NEW_TAG}) |"
+        #   echo "</details>"
+        # } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "### Tag: [\`${NEW_TAG}\``](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${NEW_TAG})" >> "$GITHUB_STEP_SUMMARY"
