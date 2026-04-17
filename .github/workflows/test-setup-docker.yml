@@ -1,0 +1,124 @@
+name: "Test: setup-docker"
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # On pull_request: docker-push must be "false" and tags must include pr-<number>
+  test-pr-path:
+    name: "Test PR path (docker-push=false, PR tags)"
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Run setup-docker"
+        id: docker
+        uses: ./actions/setup-docker
+        with:
+          app-name: test-app
+          app-version: "1.2.3"
+
+      - name: "Verify PR outputs"
+        shell: bash
+        env:
+          DOCKER_PUSH: ${{ steps.docker.outputs.docker-push }}
+          DOCKER_TAGS: ${{ steps.docker.outputs.docker-tags }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if [[ "$DOCKER_PUSH" != "false" ]]; then
+            echo "FAIL: docker-push should be 'false' on PR, got '$DOCKER_PUSH'"
+            exit 1
+          fi
+          if ! echo "$DOCKER_TAGS" | grep -q "pr-${PR_NUMBER}"; then
+            echo "FAIL: docker-tags should contain pr-${PR_NUMBER}, got '$DOCKER_TAGS'"
+            exit 1
+          fi
+          if echo "$DOCKER_TAGS" | grep -q ":latest"; then
+            echo "FAIL: docker-tags should not contain ':latest' on PR, got '$DOCKER_TAGS'"
+            exit 1
+          fi
+          if echo "$DOCKER_TAGS" | grep -q ":1.2.3"; then
+            echo "FAIL: docker-tags should not contain version tag on PR, got '$DOCKER_TAGS'"
+            exit 1
+          fi
+          if ! echo "$DOCKER_TAGS" | grep -q "test-app"; then
+            echo "FAIL: docker-tags should contain app-name 'test-app', got '$DOCKER_TAGS'"
+            exit 1
+          fi
+          echo "OK: docker-push=$DOCKER_PUSH tags=$DOCKER_TAGS"
+
+  # On workflow_dispatch (non-PR): docker-push must be "true" and tags must include version + latest
+  test-push-path:
+    name: "Test push path (docker-push=true, version + latest tags)"
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Run setup-docker"
+        id: docker
+        uses: ./actions/setup-docker
+        with:
+          app-name: test-app
+          app-version: "1.2.3"
+
+      - name: "Verify push outputs"
+        shell: bash
+        env:
+          DOCKER_PUSH: ${{ steps.docker.outputs.docker-push }}
+          DOCKER_TAGS: ${{ steps.docker.outputs.docker-tags }}
+        run: |
+          set -euo pipefail
+          if [[ "$DOCKER_PUSH" != "true" ]]; then
+            echo "FAIL: docker-push should be 'true' on non-PR, got '$DOCKER_PUSH'"
+            exit 1
+          fi
+          if ! echo "$DOCKER_TAGS" | grep -q ":1.2.3"; then
+            echo "FAIL: docker-tags should contain ':1.2.3', got '$DOCKER_TAGS'"
+            exit 1
+          fi
+          if ! echo "$DOCKER_TAGS" | grep -q ":latest"; then
+            echo "FAIL: docker-tags should contain ':latest', got '$DOCKER_TAGS'"
+            exit 1
+          fi
+          if ! echo "$DOCKER_TAGS" | grep -q "test-app"; then
+            echo "FAIL: docker-tags should contain app-name 'test-app', got '$DOCKER_TAGS'"
+            exit 1
+          fi
+          echo "OK: docker-push=$DOCKER_PUSH tags=$DOCKER_TAGS"
+
+  # Runs on both events: verifies the SHA tag is always present
+  test-sha-tag-always-present:
+    name: "Test SHA tag present on all events"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Run setup-docker"
+        id: docker
+        uses: ./actions/setup-docker
+        with:
+          app-name: sha-test-app
+          app-version: "0.0.1"
+
+      - name: "Verify SHA tag is in docker-tags"
+        shell: bash
+        env:
+          DOCKER_TAGS: ${{ steps.docker.outputs.docker-tags }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if ! echo "$DOCKER_TAGS" | grep -q "${SHA}"; then
+            echo "FAIL: docker-tags should contain commit SHA '${SHA}', got '$DOCKER_TAGS'"
+            exit 1
+          fi
+          echo "OK: SHA tag present in docker-tags"

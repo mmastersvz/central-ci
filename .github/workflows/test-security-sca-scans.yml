@@ -1,0 +1,69 @@
+name: "Test: security-sca-scans"
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  test-fs-scan:
+    name: "Test Trivy FS scan runs and produces SARIF"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Run security-sca-scans against repo root"
+        id: sca
+        uses: ./actions/security-sca-scans
+        with:
+          app-name: central-ci-test
+          scan-ref: "."
+
+      - name: "Verify SARIF output file was created"
+        shell: bash
+        run: |
+          set -euo pipefail
+          sarif_file="trivy-src-results-central-ci-test.sarif"
+          if [[ ! -f "$sarif_file" ]]; then
+            echo "FAIL: expected SARIF file '$sarif_file' not found"
+            exit 1
+          fi
+          if ! python3 -c "import json, sys; json.load(open('$sarif_file'))" 2>/dev/null; then
+            echo "FAIL: SARIF file '$sarif_file' is not valid JSON"
+            exit 1
+          fi
+          schema=$(python3 -c "import json; d=json.load(open('$sarif_file')); print(d.get('\$schema',''))")
+          if [[ -z "$schema" ]]; then
+            echo "FAIL: SARIF file missing \$schema field (may not be a valid SARIF document)"
+            exit 1
+          fi
+          echo "OK: SARIF file produced and is valid — schema=$schema"
+
+  test-custom-severity:
+    name: "Test scan with custom severity filter"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Run security-sca-scans with CRITICAL only"
+        uses: ./actions/security-sca-scans
+        with:
+          app-name: central-ci-test-critical
+          scan-ref: "."
+          severity: "CRITICAL"
+
+      - name: "Verify CRITICAL-only SARIF file was created"
+        shell: bash
+        run: |
+          set -euo pipefail
+          sarif_file="trivy-src-results-central-ci-test-critical.sarif"
+          if [[ ! -f "$sarif_file" ]]; then
+            echo "FAIL: expected SARIF file '$sarif_file' not found"
+            exit 1
+          fi
+          echo "OK: CRITICAL-only SARIF file produced"

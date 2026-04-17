@@ -1,0 +1,77 @@
+name: "Test: security-sast-pre-scans"
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # Fast path: skip-semgrep=true must complete without error and write a summary
+  test-skip-path:
+    name: "Test skip-semgrep=true completes cleanly"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Run security-sast-pre-scans with semgrep skipped"
+        uses: ./actions/security-sast-pre-scans
+        with:
+          skip-semgrep: "true"
+          do-checkout: "false"
+
+      - name: "Verify no SARIF file was written (semgrep was skipped)"
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f "semgrep-results.sarif" ]]; then
+            echo "FAIL: semgrep-results.sarif should not exist when semgrep is skipped"
+            exit 1
+          fi
+          echo "OK: no SARIF file written when semgrep skipped"
+
+  # OSS mode smoke test: semgrep runs, may find issues (exit 1/7) but must not fatal error
+  test-oss-mode-smoke:
+    name: "Test OSS mode Semgrep scan (findings treated as non-fatal)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Run security-sast-pre-scans in OSS mode"
+        id: sast
+        uses: ./actions/security-sast-pre-scans
+        with:
+          do-checkout: "false"
+          # Narrow ruleset so the scan is fast; findings are expected (exit 1/7) and not fatal
+          semgrep-config: "p/ci"
+        continue-on-error: true
+
+      - name: "Verify outcome is success or failure (not cancelled/unknown)"
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.sast.outcome }}
+        run: |
+          set -euo pipefail
+          if [[ "$OUTCOME" != "success" && "$OUTCOME" != "failure" ]]; then
+            echo "FAIL: unexpected outcome '$OUTCOME' — expected success or failure (findings)"
+            exit 1
+          fi
+          echo "OK: Semgrep OSS scan completed with outcome=$OUTCOME"
+
+      - name: "Verify SARIF file was written"
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f "semgrep-results.sarif" ]]; then
+            echo "FAIL: semgrep-results.sarif not found — scan may not have run"
+            exit 1
+          fi
+          if ! python3 -c "import json, sys; json.load(open('semgrep-results.sarif'))" 2>/dev/null; then
+            echo "FAIL: semgrep-results.sarif is not valid JSON"
+            exit 1
+          fi
+          echo "OK: SARIF file produced"

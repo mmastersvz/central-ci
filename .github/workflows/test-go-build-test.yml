@@ -1,0 +1,42 @@
+name: "Test: go-build-test"
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-build-and-test:
+    name: "Test Go build, vet, test, and binary output"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Run go-build-test against fixture app"
+        uses: ./actions/go-build-test
+        with:
+          app-dir: tests/fixtures/go-app
+
+      - name: "Verify binary was produced"
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f "tests/fixtures/go-app/app" ]]; then
+            echo "FAIL: expected binary 'app' was not created in tests/fixtures/go-app/"
+            exit 1
+          fi
+          echo "OK: binary produced at tests/fixtures/go-app/app"
+
+      - name: "Verify coverage report was produced"
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f "tests/fixtures/go-app/coverage.out" ]]; then
+            echo "FAIL: expected coverage.out was not created in tests/fixtures/go-app/"
+            exit 1
+          fi
+          echo "OK: coverage.out present"
+          head -5 tests/fixtures/go-app/coverage.out

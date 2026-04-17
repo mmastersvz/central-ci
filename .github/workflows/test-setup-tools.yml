@@ -1,0 +1,138 @@
+name: "Test: setup-tools"
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-single-tool:
+    name: "Test single tool extraction"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Create fixture .tool-versions"
+        shell: bash
+        run: |
+          cat > /tmp/fixture-tool-versions <<'EOF'
+          golang 1.22.3
+          java temurin-21.0.7+6.0.LTS
+          maven 3.9.6
+          node 20.12.2
+          python 3.12.3
+          EOF
+
+      - name: "Run setup-tools (single tool)"
+        id: tools
+        uses: ./actions/setup-tools
+        with:
+          tools: "golang"
+          tool-versions-path: "/tmp/fixture-tool-versions"
+
+      - name: "Verify single tool JSON output"
+        shell: bash
+        env:
+          VERSIONS: ${{ steps.tools.outputs.tool-versions }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$VERSIONS" ]]; then
+            echo "FAIL: tool-versions output is empty"
+            exit 1
+          fi
+          if ! echo "$VERSIONS" | python3 -c "import json, sys; json.load(sys.stdin)" 2>/dev/null; then
+            echo "FAIL: tool-versions output is not valid JSON: '$VERSIONS'"
+            exit 1
+          fi
+          val=$(echo "$VERSIONS" | python3 -c "import json, sys; d = json.load(sys.stdin); print(d.get('golang', ''))")
+          if [[ "$val" != "1.22.3" ]]; then
+            echo "FAIL: expected golang=1.22.3, got '$val' (full output: $VERSIONS)"
+            exit 1
+          fi
+          echo "OK: tool-versions=$VERSIONS"
+
+  test-multiple-tools:
+    name: "Test multiple tools extracted together"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Create fixture .tool-versions"
+        shell: bash
+        run: |
+          cat > /tmp/fixture-tool-versions-multi <<'EOF'
+          golang 1.22.3
+          java temurin-21.0.7+6.0.LTS
+          maven 3.9.6
+          EOF
+
+      - name: "Run setup-tools (multiple tools)"
+        id: tools
+        uses: ./actions/setup-tools
+        with:
+          tools: "golang,maven"
+          tool-versions-path: "/tmp/fixture-tool-versions-multi"
+
+      - name: "Verify multiple tools in JSON output"
+        shell: bash
+        env:
+          VERSIONS: ${{ steps.tools.outputs.tool-versions }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$VERSIONS" ]]; then
+            echo "FAIL: tool-versions output is empty"
+            exit 1
+          fi
+          if ! echo "$VERSIONS" | python3 -c "import json, sys; json.load(sys.stdin)" 2>/dev/null; then
+            echo "FAIL: tool-versions output is not valid JSON: '$VERSIONS'"
+            exit 1
+          fi
+          golang_val=$(echo "$VERSIONS" | python3 -c "import json, sys; d = json.load(sys.stdin); print(d.get('golang', ''))")
+          maven_val=$(echo "$VERSIONS" | python3 -c "import json, sys; d = json.load(sys.stdin); print(d.get('maven', ''))")
+          if [[ "$golang_val" != "1.22.3" ]]; then
+            echo "FAIL: expected golang=1.22.3, got '$golang_val'"
+            exit 1
+          fi
+          if [[ "$maven_val" != "3.9.6" ]]; then
+            echo "FAIL: expected maven=3.9.6, got '$maven_val'"
+            exit 1
+          fi
+          echo "OK: golang=$golang_val maven=$maven_val"
+
+  test-missing-tool-fails:
+    name: "Test missing tool causes failure"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Create fixture .tool-versions (no rust entry)"
+        shell: bash
+        run: |
+          cat > /tmp/fixture-tool-versions-missing <<'EOF'
+          golang 1.22.3
+          EOF
+
+      - name: "Run setup-tools for missing tool (should fail)"
+        id: tools
+        uses: ./actions/setup-tools
+        with:
+          tools: "rust"
+          tool-versions-path: "/tmp/fixture-tool-versions-missing"
+        continue-on-error: true
+
+      - name: "Verify step failed"
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.tools.outcome }}
+        run: |
+          set -euo pipefail
+          if [[ "$OUTCOME" != "failure" ]]; then
+            echo "FAIL: expected step to fail for missing tool, got outcome='$OUTCOME'"
+            exit 1
+          fi
+          echo "OK: step correctly failed for missing tool"

@@ -1,0 +1,48 @@
+name: "Test: security-sast-post-scans"
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # skip-codeql=true must complete without error and write a summary
+  test-skip-path:
+    name: "Test skip-codeql=true completes cleanly"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Run security-sast-post-scans with CodeQL skipped"
+        uses: ./actions/security-sast-post-scans
+        with:
+          codeql-languages: "javascript"
+          skip-codeql: "true"
+          do-checkout: "false"
+
+      - name: "Verify step completed without error"
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "OK: security-sast-post-scans completed with skip-codeql=true"
+
+  # JavaScript/TypeScript (build-mode: none) is the lowest-friction real CodeQL scan
+  test-javascript-none-mode:
+    name: "Test CodeQL scan for javascript with build-mode=none"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Run security-sast-post-scans for javascript"
+        uses: ./actions/security-sast-post-scans
+        with:
+          codeql-languages: "javascript"
+          codeql-build-mode: "none"
+          codeql-category-suffix: "test-js"
+          codeql-upload-results: "false"
+          do-checkout: "false"
