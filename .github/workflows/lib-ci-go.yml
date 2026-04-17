@@ -145,12 +145,18 @@ jobs:
         with:
           app-dir: ${{ inputs.app-dir }}
 
+      - name: "Cache: Go tools (govulncheck)"
+        uses: actions/cache@v4
+        with:
+          path: ~/go/bin
+          key: go-tools-${{ runner.os }}-govulncheck
+
       - name: "Security: Go Vulnerability Check"
         shell: bash
         working-directory: ${{ inputs.app-dir }}
         run: |
           set -euo pipefail
-          go install golang.org/x/vuln/cmd/govulncheck@latest
+          command -v govulncheck || go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
 
       - name: "Security: SAST | Post build"

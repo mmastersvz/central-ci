@@ -150,6 +150,7 @@ jobs:
           distribution: "${{ steps.tools.outputs.java-distribution }}"
           java-version: "${{ steps.tools.outputs.java-version }}"
           cache: maven
+          cache-dependency-path: "${{ inputs.app-dir }}/**/pom.xml"
 
       - name: "Lint: Java Checkstyle"
         working-directory: ${{ inputs.app-dir }}
@@ -176,6 +177,7 @@ jobs:
           java-version: ${{ needs.setup.outputs.java-version }}
           distribution: ${{ needs.setup.outputs.java-distribution }}
           cache: maven
+          cache-dependency-path: "${{ inputs.app-dir }}/**/pom.xml"
 
       - name: "Setup: Maven ${{ needs.setup.outputs.maven-version }}"
         uses: stCarolas/setup-maven@v5

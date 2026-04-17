@@ -106,7 +106,7 @@ jobs:
             echo "::error::Tool '${{ inputs.language }}' not found in ${{ inputs.tool-versions-path }}"
             exit 1
           fi
-          echo "dotnet-version=${tool_version}" >> $GITHUB_OUTPUT
+          echo "dotnet-version=${tool_version}" >> "$GITHUB_OUTPUT"
 
       - name: "Setup: Docker Metadata"
         id: setup-docker
@@ -119,6 +119,14 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ steps.setup-app.outputs.dotnet-version }}
+
+      - name: "Cache: NuGet packages"
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
 
       - name: "Lint: Dotnet Format"
         run: dotnet format ${{ inputs.app-dir }} --verify-no-changes
