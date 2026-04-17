@@ -34,4 +34,4 @@ runs:
         #   echo "</details>"
         # } >> "$GITHUB_STEP_SUMMARY"
 
-          echo "### Tag: [\`${NEW_TAG}\``](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${NEW_TAG})" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Tag: [\`${NEW_TAG}\`](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${NEW_TAG})" >> "$GITHUB_STEP_SUMMARY"
