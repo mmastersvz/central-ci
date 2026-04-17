@@ -264,10 +264,45 @@ jobs:
           app-name: ${{ inputs.app-name }}
           image-ref: ${{ needs.setup.outputs.docker-tags }}
 
+  gate:
+    name: "Gate"
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [secrets, sast-pre, sca, setup, build]
+    steps:
+      - name: "Check: All required jobs"
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PYEOF'
+          import json, os, sys
+          results = json.loads(os.environ["RESULTS"])
+          failed = []
+          rows = []
+          for job, data in sorted(results.items()):
+              result = data.get("result", "unknown")
+              emoji = {"success": "✅", "skipped": "⏭️", "failure": "❌", "cancelled": "🚫"}.get(result, "⚠️")
+              if result not in ("success", "skipped"):
+                  failed.append(job)
+              rows.append(f"| `{job}` | {emoji} {result} |")
+          overall = "✅" if not failed else "❌"
+          summary = os.environ.get("GITHUB_STEP_SUMMARY", "")
+          if summary:
+              with open(summary, "a") as f:
+                  f.write(f"### {overall} Gate\n\n")
+                  f.write("| Job | Result |\n| --- | --- |\n")
+                  f.write("\n".join(rows) + "\n")
+          if failed:
+              print(f"::error::Gate failed — the following jobs did not succeed: {', '.join(failed)}")
+              sys.exit(1)
+          print("Gate passed — all required jobs succeeded or were skipped.")
+          PYEOF
+
   release:
     name: "Tag and Release"
     runs-on: ubuntu-latest
-    needs: [setup, build]
+    needs: [gate, setup]
     if: github.event_name != 'pull_request'
     permissions:
       contents: write
