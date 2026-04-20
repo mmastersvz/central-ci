@@ -1,0 +1,79 @@
+name: "OCI: Terraform Apply"
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: 'Terraform working directory'
+        required: true
+        type: string
+      terraform-version:
+        description: 'Terraform version'
+        required: false
+        type: string
+        default: '1.10.x'
+      oci-region:
+        description: 'OCI region'
+        required: true
+        type: string
+    secrets:
+      OCI_TENANCY_OCID:
+        required: true
+      OCI_USER_OCID:
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    # environment: production   # Manual approval + required reviewers configured in repo settings > Environments
+    concurrency:
+      group: terraform-apply-main
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Exchange GitHub OIDC for OCI Session Token
+        uses: gtrevorrow/oci-token-exchange-action@v1
+        with:
+          oidc_client_identifier: ${{ secrets.OCI_OAUTH_CLIENT_ID }}:${{ secrets.OCI_OAUTH_CLIENT_SECRET }}
+          domain_base_url: ${{ secrets.OCI_IAM_DOMAIN_URL }}
+          oci_tenancy: ${{ secrets.OCI_TENANCY_OCID }}
+          oci_region: ${{ inputs.oci-region }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ inputs.terraform-version }}
+
+      - name: Cache Terraform providers
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.terraform.d/plugin-cache
+            ${{ inputs.working-directory }}/.terraform/providers
+          key: ${{ runner.os }}-terraform-${{ hashFiles(format('{0}/*.lock.hcl', inputs.working-directory)) }}
+
+      - name: Terraform Init
+        working-directory: ${{ inputs.working-directory }}
+        run: terraform init -no-color
+
+      - name: Terraform Apply
+        working-directory: ${{ inputs.working-directory }}
+        run: terraform apply -auto-approve -no-color
+
+      # - name: Notify on Apply (Slack example)
+      #   if: always()
+      #   uses: slackapi/slack-github-action@v3.0.1
+      #   with:
+      #     payload: |
+      #       {
+      #         "text": "Terraform Apply ${{ job.status }} | ${{ github.repository }} | ${{ github.ref }}"
+      #       }
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

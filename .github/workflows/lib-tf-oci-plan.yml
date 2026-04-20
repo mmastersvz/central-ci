@@ -1,0 +1,111 @@
+name: "OCI: Terraform Plan"
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: 'Terraform working directory (e.g. terraform)'
+        required: true
+        type: string
+      terraform-version:
+        description: 'Terraform version to use'
+        required: false
+        type: string
+        default: '1.10.x'
+      oci-region:
+        description: 'OCI region'
+        required: true
+        type: string
+      header:
+        description: 'Header for the PR comment'
+        required: false
+        type: string
+        default: '🛠️ Terraform Plan (OCI)'
+    secrets:
+      OCI_TENANCY_OCID:
+        required: true
+      OCI_USER_OCID:
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: terraform-plan-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Exchange GitHub OIDC for OCI Session Token
+        uses: gtrevorrow/oci-token-exchange-action@v1
+        with:
+          oidc_client_identifier: ${{ secrets.OCI_OAUTH_CLIENT_ID }}:${{ secrets.OCI_OAUTH_CLIENT_SECRET }}
+          domain_base_url: ${{ secrets.OCI_IAM_DOMAIN_URL }}
+          oci_tenancy: ${{ secrets.OCI_TENANCY_OCID }}
+          oci_region: ${{ inputs.oci-region }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ inputs.terraform-version }}
+
+      - name: Cache Terraform providers
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.terraform.d/plugin-cache
+            ${{ inputs.working-directory }}/.terraform/providers
+          key: ${{ runner.os }}-terraform-${{ hashFiles(format('{0}/*.lock.hcl', inputs.working-directory)) }}
+          restore-keys: ${{ runner.os }}-terraform-
+
+      - name: Terraform Init
+        working-directory: ${{ inputs.working-directory }}
+        run: terraform init -no-color
+
+      - name: Terraform Format Check
+        working-directory: ${{ inputs.working-directory }}
+        run: terraform fmt -check -recursive -no-color
+
+      - name: Terraform Validate
+        working-directory: ${{ inputs.working-directory }}
+        run: terraform validate -no-color
+
+      - name: Run tflint
+        uses: terraform-linters/setup-tflint@v6
+        with:
+          tflint_version: latest
+
+      - name: tflint
+        working-directory: ${{ inputs.working-directory }}
+        run: tflint --init && tflint --recursive --format=compact
+
+      - name: Run tfsec
+        # uses: aquasecurity/tfsec-action@v1
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: ${{ inputs.working-directory }}
+          additional_args: "--format=compact --no-color"
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          terraform plan -no-color -out=tfplan.binary
+          terraform show -no-color tfplan.binary > tfplan.txt
+
+      - name: Post Terraform Plan to PR
+        uses: borchero/terraform-plan-comment@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          planfile: ${{ inputs.working-directory }}/tfplan.binary
+          working-directory: ${{ inputs.working-directory }}
+          header: ${{ inputs.header }}
