@@ -80,7 +80,7 @@ jobs:
     name: "Security: SCA"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: "Security: SCA Scanning"
         uses: mmastersvz/central-ci/actions/security-sca-scans@main
@@ -101,7 +101,7 @@ jobs:
       docker-tags: ${{ steps.setup-docker.outputs.docker-tags }}
     steps:
       - name: "Checkout"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -148,10 +148,10 @@ jobs:
         working-directory: ${{ inputs.app-dir }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: "Setup Python: ${{ needs.setup.outputs.python-version }}"
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ needs.setup.outputs.python-version }}
           cache: pip

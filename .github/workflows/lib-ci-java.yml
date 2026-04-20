@@ -80,7 +80,7 @@ jobs:
     name: "Security: SCA"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: "Security: SCA Scanning"
         uses: mmastersvz/central-ci/actions/security-sca-scans@main
@@ -103,7 +103,7 @@ jobs:
       docker-tags: ${{ steps.setup-docker.outputs.docker-tags }}
     steps:
       - name: "Checkout"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -145,7 +145,7 @@ jobs:
           app-version: ${{ steps.prep.outputs.build-version }}
 
       - name: "Setup: JDK"
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: "${{ steps.tools.outputs.java-distribution }}"
           java-version: "${{ steps.tools.outputs.java-version }}"
@@ -169,10 +169,10 @@ jobs:
         working-directory: ${{ inputs.app-dir }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: "Setup: JDK ${{ needs.setup.outputs.java-version }}"
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: ${{ needs.setup.outputs.java-version }}
           distribution: ${{ needs.setup.outputs.java-distribution }}
