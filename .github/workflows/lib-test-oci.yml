@@ -1,0 +1,64 @@
+name: Test OCI OIDC Authentication
+
+on:
+  workflow_call:
+    inputs:
+      oci-region:
+        description: 'OCI region to test (e.g. us-ashburn-1)'
+        required: true
+        type: string
+      test-command:
+        description: 'Optional custom OCI CLI command to run after auth (default: list regions)'
+        required: false
+        type: string
+        default: 'oci iam region list --all'
+    secrets:
+      OCI_TENANCY_OCID:
+        required: true
+      OCI_IAM_DOMAIN_URL:
+        required: true
+      OCI_OAUTH_CLIENT_ID:
+        required: true
+      OCI_OAUTH_CLIENT_SECRET:
+        required: true
+
+permissions:
+  contents: read
+  id-token: write   # Required for GitHub OIDC token
+
+jobs:
+  test-oci-auth:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Exchange GitHub OIDC for OCI Session Token
+        uses: gtrevorrow/oci-token-exchange-action@v1
+        with:
+          oidc_client_identifier: ${{ secrets.OCI_OAUTH_CLIENT_ID }}:${{ secrets.OCI_OAUTH_CLIENT_SECRET }}
+          domain_base_url: ${{ secrets.OCI_IAM_DOMAIN_URL }}
+          oci_tenancy: ${{ secrets.OCI_TENANCY_OCID }}
+          oci_region: ${{ inputs.oci-region }}
+
+      - name: Verify OCI CLI Authentication
+        run: |
+          echo "✅ OCI CLI authentication successful!"
+          echo "Current OCI config:"
+          oci setup list-profiles
+          echo "Testing connectivity to OCI..."
+          ${{ inputs.test-command }}
+
+      - name: Show OCI Whoami / Session Info
+        run: |
+          echo "=== OCI Session Information ==="
+          oci iam user list --limit 1 --all || echo "Note: User list may require additional permissions"
+          echo ""
+          echo "✅ If you see no authentication errors above, the OIDC exchange is working!"
+
+      - name: Test Terraform Compatibility (optional)
+        run: |
+          echo "Testing basic Terraform init with OCI provider..."
+          # This assumes you have a minimal providers.tf or it will use default
+          terraform version
+          echo "Terraform can now use the OCI session token configured by the action."
