@@ -34,7 +34,7 @@ jobs:
       pull-requests: write # optional for comments
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -46,7 +46,7 @@ jobs:
 
       # Secret scanning (early fail)
       - name: Secret Detection (TruffleHog)
-        uses: trufflesecurity/trufflehog@v3.94.3
+        uses: trufflesecurity/trufflehog@v3.95.2
         with:
           path: ./
           base: ${{ github.event.pull_request.base.sha || github.sha }}

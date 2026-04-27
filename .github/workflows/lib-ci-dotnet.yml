@@ -65,7 +65,7 @@ jobs:
     name: "Security: SCA"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: "Security: SCA Scanning"
         uses: mmastersvz/central-ci/actions/security-sca-scans@main
@@ -86,7 +86,7 @@ jobs:
       docker-tags: ${{ steps.setup-docker.outputs.docker-tags }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -116,12 +116,12 @@ jobs:
           app-version: ${{ steps.prep.outputs.build-version }}
 
       - name: "Setup: .NET"
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ steps.setup-app.outputs.dotnet-version }}
 
       - name: "Cache: NuGet packages"
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
@@ -140,10 +140,10 @@ jobs:
         working-directory: ${{ inputs.app-dir }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: "Cache: NuGet packages"
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
           key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json', '**/*.csproj') }}
