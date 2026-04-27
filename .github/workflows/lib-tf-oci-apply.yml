@@ -36,7 +36,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Exchange GitHub OIDC for OCI Session Token
         uses: gtrevorrow/oci-token-exchange-action@v1
@@ -52,7 +52,7 @@ jobs:
           terraform_version: ${{ inputs.terraform-version }}
 
       - name: Cache Terraform providers
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.terraform.d/plugin-cache
